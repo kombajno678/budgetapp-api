@@ -1,119 +1,125 @@
 import os
-from flask import Flask, flash, request, render_template, redirect, url_for, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from flask_restful import Resource, Api
-from flask_marshmallow import Marshmallow
+
+from flask import Flask, request, jsonify, render_template, _request_ctx_stack
 from flask_cors import CORS, cross_origin
-from werkzeug.utils import secure_filename
-import pandas as pd
-ENV = str(os.environ.get('ENV','dev'))
 
-UPLOAD_FOLDER_prod = '/tmp'
-UPLOAD_FOLDER_dev = 'uploads'
+#from middleware.loggermiddleware import LoggerMiddleware
+from middleware.tokenAuth import requires_auth, AuthError
 
-ALLOWED_EXTENSIONS = {'csv', 'txt'}
+from endpoints import api
+print('appp.__name__ : ' + __name__)
 
 
-app = Flask(__name__)
-api = Api(app)
-ma = Marshmallow(app)
-cors = CORS(app)
+# env variables
 
-app.config['CORS_HEADERS'] = 'Content-Type'
+ENV = str(os.environ.get('ENV', 'developement'))
+DATABASE_URL = str(os.environ.get(
+    'DATABASE_URL', 'postgresql://postgres:super123@localhost/budgetapp'))
 
+# app init
+#app = Flask(__name__)
+#app.wsgi_app = LoggerMiddleware(app.wsgi_app)
 
-
-
-
-# db config
-
-if ENV == 'dev':
-    app.debug = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/flask-test'
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER_dev
-else:
-    app.debug = False
-    #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://ueskuahwmobatn:f9cf075ac7555e72e100e45faae5f93588aaed25fe2e826a12f65a41755ed356@ec2-54-247-94-127.eu-west-1.compute.amazonaws.com:5432/d58b1gfhhttkv1'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:KrCBxEPyMigpBg03@35.231.61.14/budgetapp'
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER_prod
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-
-class BudgetModel(db.Model):
-    __tablename__ = 'budget'
-
-    id = db.Column(db.Integer, primary_key=True)
-    initialBudget = db.Column(db.Float)
-    monthlyExpenses = db.Column(db.Float)
-    monthlyIncome = db.Column(db.Float)
-    created = db.Column(db.DateTime)
-    updated = db.Column(db.DateTime)
-
-    def __init__(self, initialBudget, monthlyExpenses, monthlyIncome):
-        
-        self.initialBudget = initialBudget
-        self.monthlyExpenses = monthlyExpenses
-        self.monthlyIncome = monthlyIncome
-    
-    def __repr__(self):
-        return '<BudgetModel; ' + str(self.initialBudget) + '; ' + str(self.monthlyExpenses) + '; ' + str(self.monthlyIncome) + '>'
+#app.config['SECRET_KEY'] = 'kCRg9r7la92Efm5xPQckmD2SICr3VnEmgcv-HuhwnTCJclD96K0UAHeb4xOZztjJ'
+#app.config['CORS_HEADERS'] = 'Content-Type'
+#app.debug = ENV != 'production'
+#cors = CORS(app)
 
 
-class BudgetSchema(ma.Schema):
-    class Meta:
-        fields = ("id", "initialBudget", "monthlyExpenses", "monthlyIncome", "created", "updated")
-        model = BudgetModel
+# Operation
+if True:
 
-budget_schema = BudgetSchema()
-budgets_schema = BudgetSchema(many=True)
+    class BudgetOperation(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        value = db.Column(db.Float)
+        name = db.Column(db.String(100))
 
+        def __init__(self, value, name):
+            self.value = value
+            self.name = name
 
+        def __repr__(self):
+            # + ' schedule_id:' + str(self.schedule_id)
+            return '<BudgetOperation: value:' + str(self.value) + ' name:' + str(self.name) + '>'
+    # Operation schema
 
-class BudgetResource(Resource):
-    def get(self):
-        if request.json and 'id' in request.json:
-            find_id = request.json['id']
-            budget = BudgetModel.query.get(find_id)
-            return budget_schema.dump(budget)
-        else:
-            budgets = BudgetModel.query.all()
-            return budgets_schema.dump(budgets)
-            
-    def put(self):
-        new_budget = BudgetModel(
-            initialBudget = request.json['initialBudget'],
-            monthlyExpenses = request.json['monthlyExpenses'],
-            monthlyIncome = request.json['monthlyIncome']
-        )
-        db.session.add(new_budget)
+    class BudgetOperationSchema(ma.Schema):
+        class Meta:
+            fields = ('id', 'value', 'name', 'schedule_id')
+
+    # init schema
+    operation_schema = BudgetOperationSchema()
+    operations_schema = BudgetOperationSchema(many=True)
+
+    # create operation
+
+    @app.route('/operation', methods=['POST'])
+    @cross_origin()
+    @requires_auth
+    def createOperation():
+        name = request.json['name']
+        value = request.json['value']
+        schedule_id = request.json['schedule_id']
+
+        new_operation = BudgetOperation(value, name)
+        new_operation.schedule_id = schedule_id
+
+        db.session.add(new_operation)
         db.session.commit()
-        return budget_schema.dump(new_budget)
+        return operation_schema.jsonify(new_operation)
 
-    def delete(self, budget_id):
-        budget_to_delete = BudgetModel.query.get_or_404(budget_id)
-        db.session.delete(budget_to_delete)
+    # update operation
+
+    @app.route('/operation/<id>', methods=['PUT'])
+    @cross_origin()
+    @requires_auth
+    def updateOperation(id):
+        # fetch
+        operation = BudgetOperation.query.get(id)
+
+        if request.json.__contains__('name'):
+            operation.name = request.json['name']
+
+        if request.json.__contains__('value'):
+            operation.value = request.json['value']
+
+        if request.json.__contains__('schedule_id'):
+            operation.schedule_id = request.json['schedule_id']
+
         db.session.commit()
-        return '', 204
 
-    def patch(self):
-        id = request.json['id']
-        budget = BudgetModel.query.get_or_404(id)
+        return operation_schema.jsonify(operation)
 
-        if 'initialBudget' in request.json:
-            budget.initialBudget = request.json['initialBudget']
+    # get all operations
 
-        if 'monthlyExpenses' in request.json:
-            budget.monthlyExpenses = request.json['monthlyExpenses']
+    @app.route('/operation', methods=['GET'])
+    @cross_origin()
+    @requires_auth
+    def getOperations():
+        all_operations = BudgetOperation.query.all()
+        result = operations_schema.dump(all_operations)
+        return jsonify(result)
 
-        if 'monthlyIncome' in request.json:
-            budget.monthlyIncome = request.json['monthlyIncome']
-        
+    # get single operation
+
+    @app.route('/operation/<id>', methods=['GET'])
+    @cross_origin()
+    @requires_auth
+    def getOperation(id):
+        operation = BudgetOperation.query.get(id)
+        return operation_schema.jsonify(operation)
+
+    # delete operation
+
+    @app.route('/operation/<id>', methods=['DELETE'])
+    @cross_origin()
+    @requires_auth
+    def deleteOperation(id):
+        operation = BudgetOperation.query.get(id)
+        db.session.delete(operation)
         db.session.commit()
-        return budget_schema.dump(budget)
+        return operation_schema.jsonify(operation)
 
-api.add_resource(BudgetResource, '/budget', '/budget/<int:budget_id>')
 
 @app.route('/')
 @cross_origin()
@@ -121,80 +127,48 @@ def render_test_page():
     return render_template('index.html')
 
 
-@app.route('/create')
+@app.route('/testtoken')
 @cross_origin()
-def create():
-    db.create_all()
-    return {"result" : "how tf should i know"}
+@requires_auth
+def test_token():
+    return jsonify(_request_ctx_stack.top.current_user)
 
 
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
 
 
+# run server
+if __name__ == '__main__':
 
+    # for k, v in os.environ.items():
+    #    print(f'    {k}={v}')
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    print('ENV=' + str(os.environ.get('ENV')))
+    print('DATABASE_URL=' + str(os.environ.get('DATABASE_URL')))
+    print('AUTH0_DOMAIN=' + str(os.environ.get('AUTH0_DOMAIN')))
+    print('API_IDENTIFIER=' + str(os.environ.get('API_IDENTIFIER')))
 
-@app.route('/uploads', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            print('file.save ' + str(filename))
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            try:
-                df = loadMBankCsv(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                print(df)
-                return str(df.to_json(orient='index'))
-            except:
-                print('error at : loadMBankCsv(file)')
+    print('INIT: app startup, ENV : ' + str(ENV))
 
-
-            #return redirect(url_for('uploaded_file', filename=filename))
-            return 'nok'
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
-
-def loadMBankCsv(file):
-    return pd.read_csv(file, sep=';', encoding='cp1250', skip_blank_lines=False, skiprows=25, header=0, index_col=False)
-
-
-if(__name__ == "__main__"):
-
-    print('app startup, ENV : ' + str(ENV))
-    
-    if ENV == 'dev':
-        try:
-            print('select 1  :  ' + str(db.session.query('1').first()))
-        except:
-            print('no db connection')
-        
     try:
-        db.create_all()
+        print('INIT: db connection test  :  ' +
+              str(db.session.query('1').first()))
     except:
-        print('error at: db.create_all()')
-    
-    app.run()
+        print('INIT: db connection test error')
 
+    # try:
+    #     print('INIT: executing: db.create_all() ...')
+    #     db.create_all()
+    #     print('INIT: done')
+    # except:
+    #     print('INIT: error at: db.create_all()')
+
+    print('INIT: app.run()')
+    db.drop_all()
+    db.create_all()
+
+    app.run()
