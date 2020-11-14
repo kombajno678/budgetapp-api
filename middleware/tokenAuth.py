@@ -102,9 +102,9 @@ def requires_auth(f):
                 raise AuthError({"code": "invalid_header (other error)",
                                  "err": str(err)}, 401)
 
-            userId = payload.sub.split('|')[1]
-            _request_ctx_stack.top.current_user = payload
-            return f(userId, *args, **kwargs)
+            userId = payload.get('sub').split('|')[1]
+            _request_ctx_stack.top.current_user = userId
+            return f(*args, **kwargs)
         raise AuthError({"code": "invalid_header",
                          "description": "Unable to find appropriate key"}, 401)
     return decorated

@@ -23,11 +23,17 @@ class User(db.Model):
     schedules = db.relationship(
         'Schedule', backref=db.backref('user', lazy='joined'), lazy=True)
 
-    def __init__(self, auth_id):
-        self.auth_id = auth_id
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            print("User init, %s == %s" % (key, value))
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def __repr__(self):
         return '<User %r>' % self.auth_id
+
+    def getByAuthId(auth_id):
+        return User.query.filter_by(auth_id=auth_id).first()
 
     class Schema(ma.Schema):
         class Meta:

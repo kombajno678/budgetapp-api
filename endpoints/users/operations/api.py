@@ -13,12 +13,21 @@ class OperationApi(RootApi):
 
         :param object: Database connection.
         :param int:    User identifier.
+
         """
-        return db.query(
-            Operation
-        ).join(
-            User,
-            User.id == Operation.user_id
-        ).filter(
-            Operation.user_id == user_id
-        )
+
+        if kwargs.get('id'):
+            return Operation.query.join(
+                User,
+                User.id == Operation.user_id
+            ).filter(
+                Operation.user_id == user_id,
+                Operation.id == kwargs.get('id')
+            )
+        else:
+            return Operation.query.join(
+                User,
+                User.id == Operation.user_id
+            ).filter(
+                Operation.user_id == user_id
+            )

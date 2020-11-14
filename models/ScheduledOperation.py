@@ -20,7 +20,8 @@ class ScheduledOperation(db.Model):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             print("ScheduledOperation init, %s == %s" % (key, value))
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def __repr__(self):
         return '<ScheduledOperation '+str(self.id)+' ' + str(self.schedule_id) + ' ' + str(self.value) + ' ' + str(self.name) + ' >'

@@ -26,8 +26,8 @@ cors = CORS(app)
 
 def create_app():
     """Application-factory pattern"""
-    print('INIT-app: db.init_app(app)')
-    db.init_app(app)
+    #print('INIT-app: db.init_app(app)')
+    # db.init_app(app)
     print('INIT-app: migrate.init_app(app, db)')
     migrate.init_app(app, db)
     return app

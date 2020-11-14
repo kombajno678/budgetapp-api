@@ -2,36 +2,133 @@ from app import db, ma
 
 from flask_restful import Resource
 #from http import client
-from flask import jsonify
+from flask import jsonify, _request_ctx_stack, request
+from middleware.tokenAuth import requires_auth
+
+
+from models.User import User
 
 
 class RootApi(Resource):
     MODEL_CLASS = None
 
+    @requires_auth
     def get(self, *args, **kwargs):
         if self.MODEL_CLASS == None:
             return jsonify('ok')
 
-        #query = self.model_query(db, **kwargs)
+        user_auth_id = _request_ctx_stack.top.current_user
+        # get user
+        user = User.getByAuthId(user_auth_id)
+        if user is None:
+            return None, 401
+
+        query = self.model_query(db, user.id)
 
         if kwargs.get("id"):
             # get single element
             id = kwargs.get('id')
-            element = self.MODEL_CLASS.query.get(id)
+            element = query.get_or_404(id)
             return self.MODEL_CLASS.Schema().jsonify(element)
         else:
-            elements = self.MODEL_CLASS.query.all()
+            elements = query.all()
             result = self.MODEL_CLASS.Schema(many=True).dump(elements)
             return jsonify(result)
 
+    @requires_auth
     def delete(self, **kwargs):
-        pass
+        if self.MODEL_CLASS == None:
+            return jsonify('ok')
 
+        # check if this user can delete this object
+
+        #query = self.model_query(db, **kwargs)
+
+        if kwargs.get("id") is not None:
+            user_auth_id = _request_ctx_stack.top.current_user
+            user = User.getByAuthId(user_auth_id)
+
+            if user is None:
+                return None, 401
+
+            if kwargs.get('id') is None:
+                return None, 400
+
+            query = self.model_query(db, user.id, **kwargs)
+            existing_object = query.filter(
+                self.MODEL_CLASS.id == kwargs.get('id')).first()
+
+            if existing_object is None:
+                return None, 404
+
+            db.session.delete(existing_object)
+            db.session.commit()
+            return self.MODEL_CLASS.Schema().jsonify(existing_object)
+        else:
+            return None, 400
+
+    @requires_auth
     def post(self, **kwargs):
-        pass
+        user_auth_id = _request_ctx_stack.top.current_user
+        user = User.getByAuthId(user_auth_id)
 
+        if user is None:
+            return None, 401
+
+        new_object = self.MODEL_CLASS()
+
+        # http req body values
+        for key, value in request.json.items():
+            if hasattr(new_object, key):
+                setattr(new_object, key, value)
+
+        # user FK
+        if hasattr(new_object, 'user_id'):
+            setattr(new_object, 'user_id', user.id)
+
+        # make sure PK is null
+        new_object.id = None
+
+        db.session.add(new_object)
+        try:
+            db.session.commit()
+            return self.MODEL_CLASS.Schema().jsonify(new_object)
+        except Exception as err:
+            print(err)
+            return None, 400
+
+    @requires_auth
     def put(self, **kwargs):
-        pass
+        user_auth_id = _request_ctx_stack.top.current_user
+        user = User.getByAuthId(user_auth_id)
+
+        if user is None:
+            return None, 401
+
+        if kwargs.get('id') is None:
+            return None, 400
+
+        query = self.model_query(db, user.id, **kwargs)
+
+        existing_object = query.filter(
+            self.MODEL_CLASS.id == kwargs.get('id')).first()
+
+        if existing_object is None:
+            return None, 404
+
+        # http req body values
+        for key, value in request.json.items():
+            if key == 'id' or key == 'user_id':
+                continue
+            if hasattr(existing_object, key):
+                setattr(existing_object, key, value)
+
+        try:
+            db.session.commit()
+            return self.MODEL_CLASS.Schema().jsonify(existing_object)
+        except Exception as err:
+            print(err)
+            return None, 400
 
         """
         Handle a GET request.

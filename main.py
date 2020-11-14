@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify, render_template, _request_ctx_stack, url_for
 from flask_cors import cross_origin
 
-from middleware.tokenAuth import requires_auth, AuthError
+from middleware.tokenAuth import AuthError
 
 from models import *
 

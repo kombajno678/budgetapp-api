@@ -17,7 +17,8 @@ class Schedule(db.Model):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             print("Schedule init, %s == %s" % (key, value))
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def __repr__(self):
         return '<Schedule '+str(self.id)+' ' + str(self.year) + ' ' + str(self.month) + ' ' + str(self.day_of_month) + ' ' + str(self.day_of_week) + ' ' + ' >'

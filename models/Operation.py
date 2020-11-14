@@ -20,7 +20,8 @@ class Operation(db.Model):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             print("Operation init, %s == %s" % (key, value))
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
 
         '''
         self.user_id = kwargs.get('user_id', None)
