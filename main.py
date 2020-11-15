@@ -17,13 +17,14 @@ ENV = str(os.environ.get('ENV', 'developement'))
 
 app = create_app()
 
-'''
+
 @app.route('/')
 @cross_origin()
 def render_test_page():
     return jsonify({"msg": 'hello, budgetappi works!'})
 
 
+'''
 @app.route('/testtoken')
 @cross_origin()
 @requires_auth
