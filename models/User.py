@@ -33,7 +33,21 @@ class User(db.Model):
         return '<User %r>' % self.auth_id
 
     def getByAuthId(auth_id):
-        return User.query.filter_by(auth_id=auth_id).first()
+        # if user exists, return
+        existing_user = User.query.filter_by(auth_id=auth_id).first()
+        if existing_user is not None:
+            return existing_user
+        else:
+            # else, create new user objcet
+            new_user = User()
+            new_user.auth_id = auth_id
+            db.session.add(new_user)
+            try:
+                db.session.commit()
+                return new_user
+            except Exception as err:
+                print(err)
+                return None
 
     class Schema(ma.Schema):
         class Meta:

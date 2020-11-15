@@ -21,6 +21,7 @@ class RootApi(Resource):
         # get user
         user = User.getByAuthId(user_auth_id)
         if user is None:
+            print('User.getByAuthId(user_auth_id) is None, ' + str(user_auth_id))
             return None, 401
 
         query = self.model_query(db, user.id)

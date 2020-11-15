@@ -10,6 +10,10 @@ class Operation(db.Model):
     scheduled_operation_id = db.Column(
         db.Integer, db.ForeignKey('scheduled_operation.id'), nullable=True)
 
+    when = db.Column(db.DateTime,
+                     default=datetime.utcnow,
+                     nullable=False)
+
     timestamp = db.Column(db.DateTime,
                           default=datetime.utcnow,
                           onupdate=datetime.utcnow)
@@ -36,7 +40,7 @@ class Operation(db.Model):
     class Schema(ma.Schema):
         class Meta:
             fields = ('id', 'user_id', 'scheduled_operation_id',
-                      'timestamp', 'value', 'name')
+                      'when', 'timestamp', 'value', 'name')
 
     # init schema
     schema = Schema()
