@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify, render_template, _request_ctx_stack, url_for
 from flask_cors import cross_origin
 
-from middleware.tokenAuth import AuthError
+from middleware.tokenAuth import AuthError, requires_auth
 
 from models import *
 
@@ -24,13 +24,11 @@ def render_test_page():
     return jsonify({"msg": 'hello, budgetappi works!'})
 
 
-'''
 @app.route('/testtoken')
 @cross_origin()
 @requires_auth
 def test_token():
     return jsonify(_request_ctx_stack.top.current_user)
-'''
 
 
 @app.errorhandler(AuthError)
