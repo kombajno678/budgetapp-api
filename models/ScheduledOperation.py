@@ -5,17 +5,15 @@ from datetime import datetime
 class ScheduledOperation(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
-
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime,
                           default=datetime.utcnow,
                           onupdate=datetime.utcnow)
-
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    schedule_id = db.Column(db.Integer, db.ForeignKey(
-        'schedule.id'), nullable=False)
-
     value = db.Column(db.Float, nullable=False)
     name = db.Column(db.String(100))
+
+    schedule_id = db.Column(db.Integer, db.ForeignKey(
+        'schedule.id'), nullable=False)
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

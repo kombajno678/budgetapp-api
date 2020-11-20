@@ -9,10 +9,10 @@ class Schedule(db.Model):
     timestamp = db.Column(db.DateTime,
                           default=datetime.utcnow,
                           onupdate=datetime.utcnow)
-    year = db.Column(db.Integer, nullable=True)
-    month = db.Column(db.Integer, nullable=True)
-    day_of_month = db.Column(db.Integer, nullable=True)
-    day_of_week = db.Column(db.Integer, nullable=True)
+    year = db.Column(db.ARRAY(db.Integer), nullable=True)
+    month = db.Column(db.ARRAY(db.Integer), nullable=True)
+    day_of_month = db.Column(db.ARRAY(db.Integer), nullable=True)
+    day_of_week = db.Column(db.ARRAY(db.Integer), nullable=True)
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

@@ -3,9 +3,14 @@ from datetime import datetime
 
 
 class Operation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
 
+    id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime,
+                          default=datetime.utcnow,
+                          onupdate=datetime.utcnow)
+    value = db.Column(db.Float, nullable=False)
+    name = db.Column(db.String(100))
 
     scheduled_operation_id = db.Column(
         db.Integer, db.ForeignKey('scheduled_operation.id'), nullable=True)
@@ -13,13 +18,6 @@ class Operation(db.Model):
     when = db.Column(db.DateTime,
                      default=datetime.utcnow,
                      nullable=False)
-
-    timestamp = db.Column(db.DateTime,
-                          default=datetime.utcnow,
-                          onupdate=datetime.utcnow)
-
-    value = db.Column(db.Float, nullable=False)
-    name = db.Column(db.String(100))
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
