@@ -7,7 +7,7 @@ class ScheduledOperationApi(RootApi):
 
     MODEL_CLASS = ScheduledOperation
 
-    def model_query(self, user_id, **kwargs):
+    def model_query(self, db, user_id, **kwargs):
         if kwargs.get('id'):
             return ScheduledOperation.query.join(
                 User,
