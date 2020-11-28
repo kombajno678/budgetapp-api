@@ -16,7 +16,7 @@ class Schedule(db.Model):
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
-            print("Schedule init, %s == %s" % (key, value))
+            #print("Schedule init, %s == %s" % (key, value))
             if hasattr(self, key):
                 setattr(self, key, value)
 

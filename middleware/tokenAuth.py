@@ -28,10 +28,10 @@ class AuthError(Exception):
 def get_token_auth_header():
     """Obtains the Access Token from the Authorization Header
     """
-    print('DEBUG > get_token_auth_header')
-    print('DEBUG > request.headers = ' + str(request.headers))
+    #print('DEBUG > get_token_auth_header')
+    #print('DEBUG > request.headers = ' + str(request.headers))
     auth = request.headers.get("Authorization", None)
-    print('DEBUG > auth = ' + str(auth))
+    #print('DEBUG > auth = ' + str(auth))
 
     if not auth:
         raise AuthError({"code": "authorization_header_missing",
@@ -63,9 +63,9 @@ def requires_auth(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        print('DEBUG > requires_auth')
+        #print('DEBUG > requires_auth')
         token = get_token_auth_header()
-        print('DEBUG > requires_auth ,token = ' + str(token))
+        #print('DEBUG > requires_auth ,token = ' + str(token))
 
         jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
         jwks = json.loads(jsonurl.read())

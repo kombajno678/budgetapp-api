@@ -4,5 +4,5 @@ class LoggerMiddleware(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-        print('Log middleware')
+        #print('Log middleware')
         return self.app(environ, start_response)

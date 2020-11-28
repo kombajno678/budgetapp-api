@@ -76,27 +76,48 @@ class RootApi(Resource):
         if user is None:
             return None, 401
 
-        new_object = self.MODEL_CLASS()
-
         # http req body values
-        for key, value in request.json.items():
-            if hasattr(new_object, key):
-                setattr(new_object, key, value)
+        if isinstance(request.json, list):
+            #print('posting multiple items')
+            new_objects = []
 
-        # user FK
-        if hasattr(new_object, 'user_id'):
-            setattr(new_object, 'user_id', user.id)
+            for obj in request.json:
+                new_object = self.MODEL_CLASS()
+                for key, value in obj.items():
+                    if hasattr(new_object, key):
+                        setattr(new_object, key, value)
+                # user FK
+                if hasattr(new_object, 'user_id'):
+                    setattr(new_object, 'user_id', user.id)
+                # make sure PK is null
+                new_object.id = None
+                db.session.add(new_object)
+                new_objects.append(new_object)
+            try:
+                db.session.commit()
+                return self.MODEL_CLASS.Schema(many=True).jsonify(new_objects)
+            except Exception as err:
+                print(err)
+                return None, 400
+        else:
+            #print('posting single item')
+            new_object = self.MODEL_CLASS()
+            for key, value in request.json.items():
+                if hasattr(new_object, key):
+                    setattr(new_object, key, value)
+            # user FK
+            if hasattr(new_object, 'user_id'):
+                setattr(new_object, 'user_id', user.id)
+            # make sure PK is null
+            new_object.id = None
+            db.session.add(new_object)
 
-        # make sure PK is null
-        new_object.id = None
-
-        db.session.add(new_object)
-        try:
-            db.session.commit()
-            return self.MODEL_CLASS.Schema().jsonify(new_object)
-        except Exception as err:
-            print(err)
-            return None, 400
+            try:
+                db.session.commit()
+                return self.MODEL_CLASS.Schema().jsonify(new_object)
+            except Exception as err:
+                print(err)
+                return None, 400
 
     @requires_auth
     def put(self, **kwargs):

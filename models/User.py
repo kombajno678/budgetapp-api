@@ -25,7 +25,7 @@ class User(db.Model):
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
-            print("User init, %s == %s" % (key, value))
+            #print("User init, %s == %s" % (key, value))
             if hasattr(self, key):
                 setattr(self, key, value)
 

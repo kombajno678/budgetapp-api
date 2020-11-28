@@ -21,7 +21,7 @@ class Operation(db.Model):
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
-            print("Operation init, %s == %s" % (key, value))
+            #print("Operation init, %s == %s" % (key, value))
             if hasattr(self, key):
                 setattr(self, key, value)
 

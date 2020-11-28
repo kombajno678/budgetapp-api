@@ -15,9 +15,13 @@ class ScheduledOperation(db.Model):
     schedule_id = db.Column(db.Integer, db.ForeignKey(
         'schedule.id'), nullable=False)
 
+    active = db.Column(db.Boolean, nullable=False, default=True)
+
+    hidden = db.Column(db.Boolean, nullable=False, default=False)
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
-            print("ScheduledOperation init, %s == %s" % (key, value))
+            #print("ScheduledOperation init, %s == %s" % (key, value))
             if hasattr(self, key):
                 setattr(self, key, value)
 
@@ -27,7 +31,7 @@ class ScheduledOperation(db.Model):
     class Schema(ma.Schema):
         class Meta:
             fields = ('id', 'user_id', 'timestamp', 'schedule_id',
-                      'value', 'name')
+                      'value', 'name', 'active', 'hidden')
 
     # init schema
     schema = Schema()
