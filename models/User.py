@@ -8,6 +8,9 @@ class User(db.Model):
     created = db.Column(db.DateTime,
                         default=datetime.utcnow)
 
+    # when were operations generated last time (from scheduled operations)
+    last_generated_operations_at = db.Column(db.DateTime, nullable=True)
+
     # user id from auth0
     auth_id = db.Column(db.String(100), unique=True, nullable=False)
 
@@ -51,7 +54,8 @@ class User(db.Model):
 
     class Schema(ma.Schema):
         class Meta:
-            fields = ('id', 'auth_id', 'created')
+            fields = ('id', 'auth_id', 'created',
+                      'last_generated_operations_at')
 
     # init schema
     schema = Schema()
