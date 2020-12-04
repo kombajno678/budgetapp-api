@@ -19,6 +19,9 @@ class ScheduledOperation(db.Model):
 
     hidden = db.Column(db.Boolean, nullable=False, default=False)
 
+    category_id = db.Column(
+        db.Integer, db.ForeignKey('category.id'), nullable=True)
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             #print("ScheduledOperation init, %s == %s" % (key, value))
@@ -31,7 +34,7 @@ class ScheduledOperation(db.Model):
     class Schema(ma.Schema):
         class Meta:
             fields = ('id', 'user_id', 'timestamp', 'schedule_id',
-                      'value', 'name', 'active', 'hidden')
+                      'value', 'name', 'active', 'hidden', 'category_id')
 
     # init schema
     schema = Schema()

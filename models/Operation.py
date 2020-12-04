@@ -19,6 +19,9 @@ class Operation(db.Model):
                      default=datetime.utcnow,
                      nullable=False)
 
+    category_id = db.Column(
+        db.Integer, db.ForeignKey('category.id'), nullable=True)
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             #print("Operation init, %s == %s" % (key, value))
@@ -38,7 +41,7 @@ class Operation(db.Model):
     class Schema(ma.Schema):
         class Meta:
             fields = ('id', 'user_id', 'scheduled_operation_id',
-                      'when', 'timestamp', 'value', 'name')
+                      'when', 'timestamp', 'value', 'name', 'category_id')
 
     # init schema
     schema = Schema()
