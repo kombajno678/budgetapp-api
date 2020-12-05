@@ -28,6 +28,7 @@ class Operation(db.Model):
     category = db.relationship('Category', foreign_keys=category_id)
 
     analyzed = False
+    skipped = False
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

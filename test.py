@@ -1,25 +1,28 @@
 # from logging import error
 # import os
 # from werkzeug.utils import secure_filename
+import re
+from models.Schedule import Schedule
+from models.ScheduledOperation import ScheduledOperation
+from models.Operation import Operation
+from models.Category import Category
 from os import replace
 import pandas as pd
 import numpy as np
 import datetime
 from difflib import SequenceMatcher
 
+import time
+
+start = time.time()
+
 
 # from flask import Flask, request, jsonify, render_template, _request_ctx_stack, url_for
 # from flask_cors import cross_origin
 
 # from middleware.tokenAuth import AuthError, requires_auth
-from models.Category import Category
-from models.Operation import Operation
-from models.ScheduledOperation import ScheduledOperation
-from models.Schedule import Schedule
 # from app import create_app, db, api, migrate
 # from endpoints import routes
-
-import re
 
 
 def similar(a, b):
@@ -44,7 +47,7 @@ def similar(a, b):
 
 
 def daterange(start_date, end_date):
-    for n in range(int((end_date - start_date).days)):
+    for n in range(1 + int((end_date - start_date).days)):
         yield start_date + datetime.timedelta(n)
 
 
@@ -64,92 +67,98 @@ def getStatsOfArray(a):
     return median, avg, var, std, stds, cv
 
 
-#
-# templateSchedules = {'daily' : schedule, 'weekly' : schedule, 'monthly' : schedule}
-#
-def tryToGenerateScheduledOperationFromSimilarOperations(similarOperations, minDate, maxDate, templateSchedules, user_id, groupName=None, category=None):
+def getBins(minDate, maxDate, initialValue=None):
+    # if hasattr(getBins, "minDate") and hasattr(getBins, "maxDate") and getBins.minDate == minDate and getBins.minDate == maxDate:
+    #    return getBins.distinctDays, getBins.distinctWeeks, getBins.distinctMonths
 
-    if(category is not None):
-        groupName = category.name
-
-    # print("analyzing : " + str(groupName) +
-    #      ' len:' + str(similarOperations.__len__()))
-
-    #print(' === by single operation === ')
-    #median, avg, var, std, stds, cv = getStatsOfArray(operationValues)
-
-    operationsByDay = {}
-    operationsByWeek = {}
-    operationsByMonth = {}
+    getBins.minDate = minDate
+    getBins.maxDate = maxDate
+    distinctDays = {}
+    distinctWeeks = {}
+    distinctMonths = {}
     for single_date in daterange(minDate, maxDate):
         ymd = (single_date.strftime("%Y-%m-%d"))
         yw = (single_date.strftime("%Y-%W"))
         ym = (single_date.strftime("%Y-%m"))
 
-        operationsByDay[ymd] = []
-        if(yw not in operationsByWeek.keys):
-            operationsByWeek[yw] = []
-        if(ym not in operationsByMonth.keys):
-            operationsByMonth[ym] = []
+        distinctDays[ymd] = initialValue
+        if(yw not in distinctWeeks.keys()):  # distinctWeeks.__len__() == 0 or
+            distinctWeeks[yw] = initialValue
+        if(ym not in distinctMonths.keys()):  # distinctMonths.__len__() == 0 or
+            distinctMonths[ym] = initialValue
 
-    # group by day
-    # for each day between minDate and maxDate
+    getBins.distinctDays = distinctDays
+    getBins.distinctWeeks = distinctWeeks
+    getBins.distinctMonths = distinctMonths
+
+    return getBins.distinctDays, getBins.distinctWeeks, getBins.distinctMonths
+
+
+#
+# templateSchedules = {'daily' : schedule, 'weekly' : schedule, 'monthly' : schedule}
+#
+def tryToGenerateScheduledOperationFromSimilarOperations(similarOperations, minDate, maxDate, templateSchedules, user_id, groupName=None, category=None, maxCv=1.0, minValue=5.0):
+
+    if(category is not None):
+        groupName = category.name
+
+    operationsByDay, operationsByWeek, operationsByMonth = getBins(
+        minDate, maxDate, 0)
+
+    # fill bins (group by day, week, month)
     for op in similarOperations:
         # datetime.datetime.strptime('2019-01-04T16:41:24+0200', "%Y-%m-%dT%H:%M:%S%z")
         dt = datetime.datetime.strptime(
             op.when, "%Y-%m-%dT%H:%M:%S%z")
+
         ymd = dt.strftime("%Y-%m-%d")
-        if ymd in operationsByDay:
-            # operationsByDay[ymd]["operations"].append(op)
-            operationsByDay[ymd].append(op.value)
-            # operationsByDay[ymd]["date"].append(op.when)
-        yw = (dt.strftime("%Y-%W"))
-        if yw in operationsByWeek:
-            # operationsByWeek[yw]["operations"].append(op)
-            operationsByWeek[yw].append(op.value)
-            # operationsByWeek[yw]["date"].append(op.when)
-        ym = (dt.strftime("%Y-%m"))
-        if ym in operationsByMonth:
-            # operationsByMonth[ym]["operations"].append(op)
-            operationsByMonth[ym].append(op.value)
-            # operationsByMonth[ym]["date"].append(op.when)
+        yw = dt.strftime("%Y-%W")
+        ym = dt.strftime("%Y-%m")
+
+        # if ymd in operationsByDay:
+        operationsByDay[ymd] += (op.value)
+        # if yw in operationsByWeek:
+        operationsByWeek[yw] += (op.value)
+        # if ym in operationsByMonth:
+        operationsByMonth[ym] += (op.value)
 
     d = []
-    for item in operationsByDay:
-        d.append(np.sum(operationsByDay[item]))
     w = []
-    for item in operationsByWeek:
-        w.append(np.sum(operationsByWeek[item]))
     m = []
+    for item in operationsByDay:
+        d.append((operationsByDay[item]))
+    for item in operationsByWeek:
+        w.append((operationsByWeek[item]))
     for item in operationsByMonth:
-        m.append(np.sum(operationsByMonth[item]))
+        m.append((operationsByMonth[item]))
 
     daily_cv = np.std(d) / abs(np.average(d))
     weekly_cv = np.std(w) / abs(np.average(w))
     monthly_cv = np.std(m) / abs(np.average(m))
 
-    # if any cv below 1
-    if(daily_cv < 1 or weekly_cv < 1 or monthly_cv < 1):
+    # if any cv below maxCv
+    if(daily_cv < maxCv or weekly_cv < maxCv or monthly_cv < maxCv):
 
         value = 0
         schedule = None
 
-        if(daily_cv < 1 and daily_cv < weekly_cv and daily_cv < monthly_cv):
+        if(daily_cv < maxCv and daily_cv < weekly_cv and daily_cv < monthly_cv):
             value = np.average(d)
             schedule = templateSchedules['daily']
 
-        elif(weekly_cv < 1 and weekly_cv < daily_cv and weekly_cv < monthly_cv):
+        elif(weekly_cv < maxCv and weekly_cv < daily_cv and weekly_cv < monthly_cv):
             value = np.average(w)
             schedule = templateSchedules['weekly']
 
-        elif(monthly_cv < 1 and monthly_cv < weekly_cv and monthly_cv < daily_cv):
+        elif(monthly_cv < maxCv and monthly_cv < weekly_cv and monthly_cv < daily_cv):
             value = np.average(m)
             schedule = templateSchedules['monthly']
         else:
             # too much variation in values
             return None
 
-        if(abs(value) < 5):
+        # skip if value too low
+        if(abs(value) < minValue):
             #print('skip bc value too low')
             return None
             # continue
@@ -167,15 +176,6 @@ def tryToGenerateScheduledOperationFromSimilarOperations(similarOperations, minD
 
 
 currentUserId = None
-
-dailySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
-], day_of_month=[], day_of_week=[])
-weeklySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
-], day_of_month=[], day_of_week=[6])
-monthlySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
-], day_of_month=[1], day_of_week=[])
-templateSchedules = {'daily': dailySchedule,
-                     'weekly': weeklySchedule, 'monthly': monthlySchedule}
 
 
 # read from file
@@ -316,9 +316,21 @@ print('operationsToAdd = ' + str(operationsToAdd.__len__()))
 # =================             analysis                ==================
 # ========================================================================
 #
-# find recurring operations
-# first find by category
 
+maxCv = 1.5
+minValue = 3.0
+
+dailySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
+], day_of_month=[], day_of_week=[])
+weeklySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
+], day_of_month=[], day_of_week=[6])
+monthlySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
+], day_of_month=[1], day_of_week=[])
+templateSchedules = {'daily': dailySchedule,
+                     'weekly': weeklySchedule, 'monthly': monthlySchedule}
+
+# find recurring operations
+# by category
 
 for category in categoriesToAdd:
 
@@ -335,7 +347,7 @@ for category in categoriesToAdd:
     if(operationsOfCategory.__len__() > 5):
 
         newScheduledOp = tryToGenerateScheduledOperationFromSimilarOperations(
-            operationsOfCategory, minDate, maxDate, templateSchedules, currentUserId, None, category)
+            operationsOfCategory, minDate, maxDate, templateSchedules, currentUserId, None, category, maxCv, minValue)
 
         if(newScheduledOp is not None):
             for op in operationsOfCategory:
@@ -344,21 +356,11 @@ for category in categoriesToAdd:
 
             scheduledOperationsToAdd.append(newScheduledOp)
 
-print(' categories analyzed ')
-print('scheduledOperationsToAdd : ')
-print(scheduledOperationsToAdd)
-
-
-# check those that have already been analyzed and assigned scheduled operation
-# find operations with same name (in those not analyzed)
-
-
-# get distinct names of operations
-operationsByNames = {}
+# by similar name
 for op in operationsToAdd:
 
     # if not analyzed before
-    if(op.analyzed):
+    if(op.analyzed or op.skipped):
         continue
 
     similarByName = []
@@ -378,39 +380,45 @@ for op in operationsToAdd:
             # similarByNameValues.append(op2.value)
 
     if(similarByName.__len__() > 5):
-        print(" === %s ===" % op.name)
+        #print(" === %s ===" % op.name)
 
         newScheduledOp = tryToGenerateScheduledOperationFromSimilarOperations(
-            similarByName, minDate, maxDate, templateSchedules, currentUserId, op.name, None)
+            similarByName, minDate, maxDate, templateSchedules, currentUserId, op.name, None, maxCv, minValue)
 
         if(newScheduledOp is not None):
             for op in similarByName:
                 op.analyzed = True
                 op.scheduled_operation = newScheduledOp  # pbbly not what i want
             scheduledOperationsToAdd.append(newScheduledOp)
+        else:
+            for op in similarByName:
+                op.skipped = True
 
-    '''
-    simplifiedName = op.name.lower().replace(" ", "")[0:10]
+# generate scheduled operation from all other operations
+otherOperations = []
+for op in operationsToAdd:
+    if(op.analyzed == False):
+        otherOperations.append(op)
 
-    if simplifiedName in operationsByNames:
-        operationsByNames[simplifiedName].append(op)
-    else:
-        operationsByNames[simplifiedName] = [op]
-    '''
+scheduledOperationsFromOthers = tryToGenerateScheduledOperationFromSimilarOperations(
+    otherOperations, minDate, maxDate, templateSchedules, currentUserId, 'Others', None, 999999, 0)
 
-
+scheduledOperationsToAdd.append(scheduledOperationsFromOthers)
 # maybe join similar groups
+end = time.time()
+print("time elapled : %8.2fs" % (end - start))
 
+print('operations to add : ')
+print(operationsToAdd.__len__())
+# for op in operationsToAdd:
+#    print(op)
 
-print(' names analyzed ')
-print('scheduledOperationsToAdd : ')
+print('scheduled operations to add : ')
 for sop in scheduledOperationsToAdd:
     print(sop)
 
-print('operations that had not beed categorized into schedule operations : ')
-for op in operationsToAdd:
-    if(op.analyzed == False):
-        print(op)
-
-
+print('categories to add : ')
+print(categoriesToAdd.__len__())
+# for cat in categoriesToAdd:
+#    print(cat)
 print('done')
