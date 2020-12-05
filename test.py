@@ -15,6 +15,7 @@ from difflib import SequenceMatcher
 from models.Category import Category
 from models.Operation import Operation
 from models.ScheduledOperation import ScheduledOperation
+from models.Schedule import Schedule
 # from app import create_app, db, api, migrate
 # from endpoints import routes
 
@@ -63,12 +64,19 @@ def getStatsOfArray(a):
     return median, avg, var, std, stds, cv
 
 
-def generateScheduledOperationsFromSimilarOperations(similarOperations):
-    print("================================== " + str(cat.name) + ' ' + str(similarOperations.__len__()) +
-          " ======================================")
+#
+# templateSchedules = {'daily' : schedule, 'weekly' : schedule, 'monthly' : schedule}
+#
+def tryToGenerateScheduledOperationFromSimilarOperations(similarOperations, minDate, maxDate, templateSchedules, user_id, groupName=None, category=None):
+
+    if(category is not None):
+        groupName = category.name
+
+    # print("analyzing : " + str(groupName) +
+    #      ' len:' + str(similarOperations.__len__()))
 
     #print(' === by single operation === ')
-    median, avg, var, std, stds, cv = getStatsOfArray(operationValues)
+    #median, avg, var, std, stds, cv = getStatsOfArray(operationValues)
 
     operationsByDay = {}
     operationsByWeek = {}
@@ -77,9 +85,12 @@ def generateScheduledOperationsFromSimilarOperations(similarOperations):
         ymd = (single_date.strftime("%Y-%m-%d"))
         yw = (single_date.strftime("%Y-%W"))
         ym = (single_date.strftime("%Y-%m"))
-        operationsByDay[ymd] = {"operations": [], "value": [], "date": []}
-        operationsByWeek[yw] = {"operations": [], "value": [], "date": []}
-        operationsByMonth[ym] = {"operations": [], "value": [], "date": []}
+
+        operationsByDay[ymd] = []
+        if(yw not in operationsByWeek.keys):
+            operationsByWeek[yw] = []
+        if(ym not in operationsByMonth.keys):
+            operationsByMonth[ym] = []
 
     # group by day
     # for each day between minDate and maxDate
@@ -90,28 +101,28 @@ def generateScheduledOperationsFromSimilarOperations(similarOperations):
         ymd = dt.strftime("%Y-%m-%d")
         if ymd in operationsByDay:
             # operationsByDay[ymd]["operations"].append(op)
-            operationsByDay[ymd]["value"].append(op.value)
+            operationsByDay[ymd].append(op.value)
             # operationsByDay[ymd]["date"].append(op.when)
         yw = (dt.strftime("%Y-%W"))
         if yw in operationsByWeek:
             # operationsByWeek[yw]["operations"].append(op)
-            operationsByWeek[yw]["value"].append(op.value)
+            operationsByWeek[yw].append(op.value)
             # operationsByWeek[yw]["date"].append(op.when)
         ym = (dt.strftime("%Y-%m"))
         if ym in operationsByMonth:
             # operationsByMonth[ym]["operations"].append(op)
-            operationsByMonth[ym]["value"].append(op.value)
+            operationsByMonth[ym].append(op.value)
             # operationsByMonth[ym]["date"].append(op.when)
 
     d = []
     for item in operationsByDay:
-        d.append(np.sum(operationsByDay[item]["value"]))
+        d.append(np.sum(operationsByDay[item]))
     w = []
     for item in operationsByWeek:
-        w.append(np.sum(operationsByWeek[item]["value"]))
+        w.append(np.sum(operationsByWeek[item]))
     m = []
     for item in operationsByMonth:
-        m.append(np.sum(operationsByMonth[item]["value"]))
+        m.append(np.sum(operationsByMonth[item]))
 
     daily_cv = np.std(d) / abs(np.average(d))
     weekly_cv = np.std(w) / abs(np.average(w))
@@ -121,30 +132,30 @@ def generateScheduledOperationsFromSimilarOperations(similarOperations):
     if(daily_cv < 1 or weekly_cv < 1 or monthly_cv < 1):
 
         value = 0
+        schedule = None
 
         if(daily_cv < 1 and daily_cv < weekly_cv and daily_cv < monthly_cv):
             value = np.average(d)
-            print("*** DAILY %8.2f   (%8.2f) for %s ***" %
-                  (value, daily_cv, cat.name))
-            print(d)
+            schedule = templateSchedules['daily']
+
         elif(weekly_cv < 1 and weekly_cv < daily_cv and weekly_cv < monthly_cv):
             value = np.average(w)
-            print("*** Weekly %8.2f  (%8.2f) for %s ***" %
-                  (value, weekly_cv, cat.name))
-            print(w)
+            schedule = templateSchedules['weekly']
+
         elif(monthly_cv < 1 and monthly_cv < weekly_cv and monthly_cv < daily_cv):
             value = np.average(m)
-            print("*** Monthly %8.2f (%8.2f) for %s ***" %
-                  (value, monthly_cv, cat.name))
-            print(m)
+            schedule = templateSchedules['monthly']
+        else:
+            # too much variation in values
+            return None
 
         if(abs(value) < 5):
-            print('skip bc value too low')
+            #print('skip bc value too low')
             return None
             # continue
 
-        newScheduledOp = ScheduledOperation(id=None, user_id=currentUserId, value=value, name=cat.name,
-                                            schedule_id=None, active=True, hidden=False, category=cat)
+        newScheduledOp = ScheduledOperation(id=None, user_id=user_id, value=value, name=groupName,
+                                            schedule_id=None, schedule=schedule, active=True, hidden=False, category=category)
 
         # check as already analyzed, (not sure if necessary now)
         for op in similarOperations:
@@ -157,14 +168,23 @@ def generateScheduledOperationsFromSimilarOperations(similarOperations):
 
 currentUserId = None
 
+dailySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
+], day_of_month=[], day_of_week=[])
+weeklySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
+], day_of_month=[], day_of_week=[6])
+monthlySchedule = Schedule(id=None, user_id=currentUserId, year=[], month=[
+], day_of_month=[1], day_of_week=[])
+templateSchedules = {'daily': dailySchedule,
+                     'weekly': weeklySchedule, 'monthly': monthlySchedule}
+
+
+# read from file
 file = 'tmp\\lista_operacji.csv'
 linesToSkip = 25
-
-
 parsed = pd.read_csv(file, sep=';', encoding='cp1250', skip_blank_lines=False,
                      skiprows=linesToSkip, header=0, index_col=False, decimal=",")
 
-
+# fit data to models
 # =====================================================================
 # ============================== preprocessing ========================
 # =====================================================================
@@ -300,107 +320,32 @@ print('operationsToAdd = ' + str(operationsToAdd.__len__()))
 # first find by category
 
 
-for cat in categoriesToAdd:
+for category in categoriesToAdd:
 
     operationsOfCategory = []
     operationValues = []
     operationDates = []
+    # gert operations of this category
     for op in operationsToAdd:
-        if(op.category == cat):
+        if(op.category == category):
             operationsOfCategory.append(op)
             operationValues.append(op.value)
             operationDates.append(op.when)
 
     if(operationsOfCategory.__len__() > 5):
-        print("================================== " + str(cat.name) + ' ' + str(operationsOfCategory.__len__()) +
-              " ======================================")
 
-        #print(' === by single operation === ')
-        median, avg, var, std, stds, cv = getStatsOfArray(operationValues)
+        newScheduledOp = tryToGenerateScheduledOperationFromSimilarOperations(
+            operationsOfCategory, minDate, maxDate, templateSchedules, currentUserId, None, category)
 
-        operationsByDay = {}
-        operationsByWeek = {}
-        operationsByMonth = {}
-        for single_date in daterange(minDate, maxDate):
-            ymd = (single_date.strftime("%Y-%m-%d"))
-            yw = (single_date.strftime("%Y-%W"))
-            ym = (single_date.strftime("%Y-%m"))
-            operationsByDay[ymd] = {"operations": [], "value": [], "date": []}
-            operationsByWeek[yw] = {"operations": [], "value": [], "date": []}
-            operationsByMonth[ym] = {"operations": [], "value": [], "date": []}
-
-        # group by day
-        # for each day between minDate and maxDate
-        for op in operationsOfCategory:
-            # datetime.datetime.strptime('2019-01-04T16:41:24+0200', "%Y-%m-%dT%H:%M:%S%z")
-            dt = datetime.datetime.strptime(
-                op.when, "%Y-%m-%dT%H:%M:%S%z")
-            ymd = dt.strftime("%Y-%m-%d")
-            if ymd in operationsByDay:
-                # operationsByDay[ymd]["operations"].append(op)
-                operationsByDay[ymd]["value"].append(op.value)
-                # operationsByDay[ymd]["date"].append(op.when)
-            yw = (dt.strftime("%Y-%W"))
-            if yw in operationsByWeek:
-                # operationsByWeek[yw]["operations"].append(op)
-                operationsByWeek[yw]["value"].append(op.value)
-                # operationsByWeek[yw]["date"].append(op.when)
-            ym = (dt.strftime("%Y-%m"))
-            if ym in operationsByMonth:
-                # operationsByMonth[ym]["operations"].append(op)
-                operationsByMonth[ym]["value"].append(op.value)
-                # operationsByMonth[ym]["date"].append(op.when)
-
-        d = []
-        for item in operationsByDay:
-            d.append(np.sum(operationsByDay[item]["value"]))
-        w = []
-        for item in operationsByWeek:
-            w.append(np.sum(operationsByWeek[item]["value"]))
-        m = []
-        for item in operationsByMonth:
-            m.append(np.sum(operationsByMonth[item]["value"]))
-
-        daily_cv = np.std(d) / abs(np.average(d))
-        weekly_cv = np.std(w) / abs(np.average(w))
-        monthly_cv = np.std(m) / abs(np.average(m))
-
-        # if any cv below 1
-        if(daily_cv < 1 or weekly_cv < 1 or monthly_cv < 1):
-
-            value = 0
-
-            if(daily_cv < 1 and daily_cv < weekly_cv and daily_cv < monthly_cv):
-                value = np.average(d)
-                print("*** DAILY %8.2f   (%8.2f) for %s ***" %
-                      (value, daily_cv, cat.name))
-                print(d)
-            elif(weekly_cv < 1 and weekly_cv < daily_cv and weekly_cv < monthly_cv):
-                value = np.average(w)
-                print("*** Weekly %8.2f  (%8.2f) for %s ***" %
-                      (value, weekly_cv, cat.name))
-                print(w)
-            elif(monthly_cv < 1 and monthly_cv < weekly_cv and monthly_cv < daily_cv):
-                value = np.average(m)
-                print("*** Monthly %8.2f (%8.2f) for %s ***" %
-                      (value, monthly_cv, cat.name))
-                print(m)
-
-            if(abs(value) < 5):
-                print('skip bc value too low')
-                continue
-
-            newScheduledOp = ScheduledOperation(id=None, user_id=currentUserId, value=value, name=cat.name,
-                                                schedule_id=None, active=True, hidden=False, category=cat)
-
+        if(newScheduledOp is not None):
             for op in operationsOfCategory:
                 op.analyzed = True
                 op.scheduled_operation = newScheduledOp  # pbbly not what i want
 
             scheduledOperationsToAdd.append(newScheduledOp)
 
-
-print('scheduledOperationsToAdd')
+print(' categories analyzed ')
+print('scheduledOperationsToAdd : ')
 print(scheduledOperationsToAdd)
 
 
@@ -417,31 +362,32 @@ for op in operationsToAdd:
         continue
 
     similarByName = []
-    similarByNameValues = []
+    #similarByNameValues = []
+
+    similarByName.append(op)
+    # similarByNameValues.append(op.value)
 
     for op2 in operationsToAdd:
         if(op == op2):
             continue
 
+        # check how similar are names of operations
         similarity = similar(op.name, op2.name)
         if(similarity > 0.75):
-
             similarByName.append(op2)
-            similarByNameValues.append(op2.value)
-
-            #print("%s ~ %s =  %8.2f  " % (op.name, op2.name, similarity))
+            # similarByNameValues.append(op2.value)
 
     if(similarByName.__len__() > 5):
         print(" === %s ===" % op.name)
-        median, avg, var, std, stds, cv = getStatsOfArray(similarByNameValues)
-        print("  ===  %s ==== cv: %8.2f" % (op.name, cv))
-        print(" MED: %8.2f  AVG: %8.2f   VAR: %8.2f   STD: %8.2f   STDs: %8.2f" %
-              (median, avg, var, std, stds))
-        # print(similarByNameValues)
 
-        for op3 in similarByName:
-            op3.analyzed = True
-        op.analyzed = True
+        newScheduledOp = tryToGenerateScheduledOperationFromSimilarOperations(
+            similarByName, minDate, maxDate, templateSchedules, currentUserId, op.name, None)
+
+        if(newScheduledOp is not None):
+            for op in similarByName:
+                op.analyzed = True
+                op.scheduled_operation = newScheduledOp  # pbbly not what i want
+            scheduledOperationsToAdd.append(newScheduledOp)
 
     '''
     simplifiedName = op.name.lower().replace(" ", "")[0:10]
@@ -456,34 +402,15 @@ for op in operationsToAdd:
 # maybe join similar groups
 
 
-print(operationsByNames)
+print(' names analyzed ')
+print('scheduledOperationsToAdd : ')
+for sop in scheduledOperationsToAdd:
+    print(sop)
 
-# for each distinct name get operations
-# do a n a l y z e
-
-
-'''
+print('operations that had not beed categorized into schedule operations : ')
 for op in operationsToAdd:
+    if(op.analyzed == False):
+        print(op)
 
-    # if not analyzed before
-    if(op.analyzed):
-        continue
 
-    # get operations with the same name
-    group = []
-    for op2 in operationsToAdd:
-        if(op2.name == op.name):
-            group.append(op2)
-    # ignore if: much deviation in values, much deviation in delta days (on random days)
-    if(group.__len__() >= 5):
-        # add scheduled operation
-        name = op.name
-        sumValue = 0
-        for op2 in group:
-            sumValue += op2.value
-        value = sumValue / group.__len__()  # avg value from group ?, maybe round to 0,1
-        schedule = None  # oh fukkk
-        # find on avg every x days operation occurs (they are alredy ordered by date)
-        temp = ScheduledOperation(id=None, user_id=currentUserId, value=value, name=name,
-                                  schedule_id=None, active=True, hidden=False, category_id=op.category_id)
-'''
+print('done')

@@ -15,6 +15,8 @@ class ScheduledOperation(db.Model):
     schedule_id = db.Column(db.Integer, db.ForeignKey(
         'schedule.id'), nullable=False)
 
+    schedule = db.relationship('Schedule', foreign_keys=schedule_id)
+
     active = db.Column(db.Boolean, nullable=False, default=True)
 
     hidden = db.Column(db.Boolean, nullable=False, default=False)
