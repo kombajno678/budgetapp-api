@@ -22,6 +22,8 @@ class ScheduledOperation(db.Model):
     category_id = db.Column(
         db.Integer, db.ForeignKey('category.id'), nullable=True)
 
+    category = db.relationship('Category', foreign_keys=category_id)
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             #print("ScheduledOperation init, %s == %s" % (key, value))

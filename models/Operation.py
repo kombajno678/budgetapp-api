@@ -15,12 +15,19 @@ class Operation(db.Model):
     scheduled_operation_id = db.Column(
         db.Integer, db.ForeignKey('scheduled_operation.id'), nullable=True)
 
+    scheduled_operation = db.relationship(
+        'ScheduledOperation', foreign_keys=scheduled_operation_id)
+
     when = db.Column(db.DateTime,
                      default=datetime.utcnow,
                      nullable=False)
 
     category_id = db.Column(
         db.Integer, db.ForeignKey('category.id'), nullable=True)
+
+    category = db.relationship('Category', foreign_keys=category_id)
+
+    analyzed = False
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -36,7 +43,7 @@ class Operation(db.Model):
         '''
 
     def __repr__(self):
-        return '<Operation '+str(self.id)+' ' + str(self.value) + ' ' + self.name + '>'
+        return '<Operation id='+str(self.id)+' value=' + str(self.value) + ' name=' + self.name + ' when=' + str(self.when) + '>'
 
     class Schema(ma.Schema):
         class Meta:
