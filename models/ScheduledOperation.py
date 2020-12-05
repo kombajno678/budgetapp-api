@@ -26,6 +26,9 @@ class ScheduledOperation(db.Model):
 
     category = db.relationship('Category', foreign_keys=category_id)
 
+    cv = None
+    n = None
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             #print("ScheduledOperation init, %s == %s" % (key, value))
@@ -33,7 +36,7 @@ class ScheduledOperation(db.Model):
                 setattr(self, key, value)
 
     def __repr__(self):
-        return '<ScheduledOperation '+str(self.id)+' ' + str(self.schedule_id) + ' ' + str(self.value) + ' ' + str(self.name) + ' >'
+        return f"<ScheduledOp: {self.id} {self.value:8.2f} {self.name[0:35]} (cv={self.cv:.2f}; n={self.n})>"
 
     class Schema(ma.Schema):
         class Meta:

@@ -14,6 +14,8 @@ class Category(db.Model):
     icon = db.Column(db.String(100))
     color = db.Column(db.String(100))
 
+    analyzed = False
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):
