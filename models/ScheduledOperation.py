@@ -1,30 +1,40 @@
 from app import db, ma
 from datetime import datetime
 
+from sqlathanor import declarative_base, Column, relationship
+from sqlalchemy import Integer, Float, Boolean, String, DateTime, ForeignKey
+BaseModel = declarative_base()
 
-class ScheduledOperation(db.Model):
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    timestamp = db.Column(db.DateTime,
-                          default=datetime.utcnow,
-                          onupdate=datetime.utcnow)
-    value = db.Column(db.Float, nullable=False)
-    name = db.Column(db.String(100))
+class ScheduledOperation(BaseModel):
+    __tablename__ = 'scheduled_operation'
 
-    schedule_id = db.Column(db.Integer, db.ForeignKey(
-        'schedule.id'), nullable=False)
+    id = Column(db.Integer, primary_key=True, supports_json=True)
+    user_id = Column(db.Integer, db.ForeignKey('user.id'),
+                     nullable=False, supports_json=True)
+    timestamp = Column(db.DateTime,
+                       default=datetime.utcnow,
+                       onupdate=datetime.utcnow, supports_json=True)
+    value = Column(db.Float, nullable=False, supports_json=True)
+    name = Column(db.String(100), supports_json=True)
 
-    schedule = db.relationship('Schedule', foreign_keys=schedule_id)
+    schedule_id = Column(db.Integer, db.ForeignKey(
+        'schedule.id'), nullable=False, supports_json=True)
 
-    active = db.Column(db.Boolean, nullable=False, default=True)
+    schedule = relationship(
+        'schedule', foreign_keys=schedule_id, supports_json=True)
 
-    hidden = db.Column(db.Boolean, nullable=False, default=False)
+    active = Column(db.Boolean, nullable=False,
+                    default=True, supports_json=True)
 
-    category_id = db.Column(
-        db.Integer, db.ForeignKey('category.id'), nullable=True)
+    hidden = Column(db.Boolean, nullable=False,
+                    default=False, supports_json=True)
 
-    category = db.relationship('Category', foreign_keys=category_id)
+    category_id = Column(
+        db.Integer, db.ForeignKey('category.id'), nullable=True, supports_json=True)
+
+    category = relationship(
+        'category', foreign_keys=category_id, supports_json=True)
 
     cv = None
     n = None

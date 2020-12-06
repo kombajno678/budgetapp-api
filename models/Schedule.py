@@ -1,18 +1,26 @@
 from app import db, ma
 from datetime import datetime
+from sqlathanor import declarative_base, Column, relationship
+from sqlalchemy import Integer, Float, Boolean, String, DateTime, ForeignKey
+BaseModel = declarative_base()
 
 
-class Schedule(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+class Schedule(BaseModel):
+    __tablename__ = 'schedule'
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    timestamp = db.Column(db.DateTime,
-                          default=datetime.utcnow,
-                          onupdate=datetime.utcnow)
-    year = db.Column(db.ARRAY(db.Integer), nullable=True)
-    month = db.Column(db.ARRAY(db.Integer), nullable=True)
-    day_of_month = db.Column(db.ARRAY(db.Integer), nullable=True)
-    day_of_week = db.Column(db.ARRAY(db.Integer), nullable=True)
+    id = Column(db.Integer, primary_key=True, supports_json=True)
+
+    user_id = Column(db.Integer, db.ForeignKey('user.id'),
+                     nullable=False, supports_json=True)
+    timestamp = Column(db.DateTime,
+                       default=datetime.utcnow,
+                       onupdate=datetime.utcnow, supports_json=True)
+    year = Column(db.ARRAY(db.Integer), nullable=True, supports_json=True)
+    month = Column(db.ARRAY(db.Integer), nullable=True, supports_json=True)
+    day_of_month = Column(db.ARRAY(db.Integer),
+                          nullable=True, supports_json=True)
+    day_of_week = Column(db.ARRAY(db.Integer),
+                         nullable=True, supports_json=True)
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

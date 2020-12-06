@@ -7,11 +7,20 @@ from flask import Flask, request, jsonify, render_template, _request_ctx_stack, 
 from flask_cors import cross_origin
 
 from middleware.tokenAuth import AuthError, requires_auth
-from models import *
+
 from app import create_app, db, api, migrate
 from endpoints import routes
 
 from analyzer import Analyzer
+
+
+from models import FixedPoint
+from models import Category
+from models import Schedule
+from models import ScheduledOperation
+from models import Operation
+from models import User
+
 
 ENV = str(os.environ.get('ENV', 'developement'))
 
@@ -88,6 +97,15 @@ def upload_file():
         try:
             ops, sops, cats = loadMBankCsv(filepath)
             # print(df)
+            for x in ops:
+                x = x.to_json()
+
+            for x in sops:
+                x = x.to_json()
+
+            for x in cats:
+                x = x.to_json()
+
             report = {
                 'Operations': ops,
                 'ScheduledOperations': sops,

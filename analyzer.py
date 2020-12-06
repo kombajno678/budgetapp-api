@@ -1,8 +1,11 @@
 
+
+from models.FixedPoint import FixedPoint
+from models.Category import Category
 from models.Schedule import Schedule
 from models.ScheduledOperation import ScheduledOperation
 from models.Operation import Operation
-from models.Category import Category
+from models.User import User
 
 import re
 import pandas as pd

@@ -1,30 +1,38 @@
 from app import db, ma
 from datetime import datetime
+from sqlathanor import declarative_base, Column, relationship
+from sqlalchemy import Integer, Float, Boolean, String, DateTime, ForeignKey
+BaseModel = declarative_base()
 
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+class User(BaseModel):
+    __tablename__ = 'user'
 
-    created = db.Column(db.DateTime,
-                        default=datetime.utcnow)
+    id = Column(db.Integer, primary_key=True, supports_json=True)
+
+    created = Column(db.DateTime,
+                     default=datetime.utcnow, supports_json=True)
 
     # when were operations generated last time (from scheduled operations)
-    last_generated_operations_at = db.Column(db.DateTime, nullable=True)
+    last_generated_operations_at = Column(
+        db.DateTime, nullable=True, supports_json=True)
 
     # user id from auth0
-    auth_id = db.Column(db.String(100), unique=True, nullable=False)
-
+    auth_id = Column(db.String(100), unique=True,
+                     nullable=False, supports_json=True)
+    '''
     # operations
-    operations = db.relationship(
-        'Operation', backref=db.backref('user', lazy='joined'), lazy=True)
+    operations = relationship(
+        'operation', backref=db.backref('user', lazy='joined'), lazy=True, supports_json=True)
 
     # scheduledOperations
-    scheduledOperations = db.relationship(
-        'ScheduledOperation', backref=db.backref('user', lazy='joined'), lazy=True)
+    scheduledOperations = relationship(
+        'scheduled_operation', backref=db.backref('user', lazy='joined'), lazy=True, supports_json=True)
 
     # schedules
-    schedules = db.relationship(
-        'Schedule', backref=db.backref('user', lazy='joined'), lazy=True)
+    schedules = relationship(
+        'schedule', backref=db.backref('user', lazy='joined'), lazy=True, supports_json=True)
+    '''
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

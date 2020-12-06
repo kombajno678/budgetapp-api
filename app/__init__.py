@@ -8,6 +8,8 @@ from flask_cors import CORS, cross_origin
 from middleware.tokenAuth import requires_auth, AuthError
 from flask_restful import Api
 
+from sqlathanor import FlaskBaseModel, initialize_flask_sqlathanor
+
 
 from app.configs import Config, Configdb
 
@@ -16,7 +18,9 @@ app = Flask(__name__)
 app.config.from_object(Config)
 app.config.from_object(Configdb)
 
-db = SQLAlchemy(app)
+db = SQLAlchemy(app, model_class=FlaskBaseModel)
+db = initialize_flask_sqlathanor(db)
+
 ma = Marshmallow(app)
 migrate = Migrate(app, db)
 api = Api(app)
