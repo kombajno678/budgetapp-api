@@ -1,8 +1,9 @@
+from models.BaseModel import BaseModel
 from app import db, ma
 from datetime import datetime
 
 
-class Operation(db.Model):
+class Operation(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -29,6 +30,27 @@ class Operation(db.Model):
 
     analyzed = False
     skipped = False
+
+    _default_fields = [
+        "id",
+        "user_id",
+        "timestamp",
+        "value",
+        "name",
+        "scheduled_operation_id",
+        "scheduled_operation",
+        "when",
+        "category_id",
+        "category",
+    ]
+    _hidden_fields = [
+        "timestamp",
+    ]
+    _readonly_fields = [
+        "id",
+        "user_id",
+        "timestamp",
+    ]
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

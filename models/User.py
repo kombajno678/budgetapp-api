@@ -1,8 +1,9 @@
+from models.BaseModel import BaseModel
 from app import db, ma
 from datetime import datetime
 
 
-class User(db.Model):
+class User(BaseModel):
     id = db.Column(db.Integer, primary_key=True)
 
     created = db.Column(db.DateTime,
@@ -25,6 +26,21 @@ class User(db.Model):
     # schedules
     schedules = db.relationship(
         'Schedule', backref=db.backref('user', lazy='joined'), lazy=True)
+
+    _default_fields = [
+        "id",
+        "created",
+        "last_generated_operations_at",
+        "auth_id"
+    ]
+    _hidden_fields = [
+        "auth_id",
+    ]
+    _readonly_fields = [
+        "id",
+        "created",
+        "auth_id",
+    ]
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

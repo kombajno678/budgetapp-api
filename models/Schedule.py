@@ -1,8 +1,9 @@
+from models.BaseModel import BaseModel
 from app import db, ma
 from datetime import datetime
 
 
-class Schedule(db.Model):
+class Schedule(BaseModel):
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -13,6 +14,25 @@ class Schedule(db.Model):
     month = db.Column(db.ARRAY(db.Integer), nullable=True)
     day_of_month = db.Column(db.ARRAY(db.Integer), nullable=True)
     day_of_week = db.Column(db.ARRAY(db.Integer), nullable=True)
+
+    _default_fields = [
+        "id",
+        "user_id",
+        "timestamp",
+        "year",
+        "month",
+        "month",
+        "day_of_month",
+        "day_of_week"
+    ]
+    _hidden_fields = [
+        "timestamp",
+    ]
+    _readonly_fields = [
+        "id",
+        "user_id",
+        "timestamp",
+    ]
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

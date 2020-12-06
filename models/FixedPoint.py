@@ -1,8 +1,9 @@
+from models.BaseModel import BaseModel
 from app import db, ma
 from datetime import datetime
 
 
-class FixedPoint(db.Model):
+class FixedPoint(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -14,6 +15,22 @@ class FixedPoint(db.Model):
 
     when = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     exact_value = db.Column(db.Float, nullable=False)
+
+    _default_fields = [
+        "id",
+        "user_id",
+        "timestamp",
+        "when",
+        "exact_value"
+    ]
+    _hidden_fields = [
+        "timestamp",
+    ]
+    _readonly_fields = [
+        "id",
+        "user_id",
+        "timestamp",
+    ]
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
