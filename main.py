@@ -1,6 +1,6 @@
 from logging import error
-from old_app import BudgetOperation
 import os
+import json
 from werkzeug.utils import secure_filename
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, _request_ctx_stack, url_for
@@ -10,6 +10,8 @@ from middleware.tokenAuth import AuthError, requires_auth
 from models import *
 from app import create_app, db, api, migrate
 from endpoints import routes
+
+from analyzer import Analyzer
 
 ENV = str(os.environ.get('ENV', 'developement'))
 
@@ -84,12 +86,15 @@ def upload_file():
         print('file.save ' + str(filepath))
         file.save(filepath)
         try:
-            df = loadMBankCsv(filepath)
+            ops, sops, cats = loadMBankCsv(filepath)
             # print(df)
+            report = {
+                'Operations': ops,
+                'ScheduledOperations': sops,
+                'Categories': cats
+            }
 
-            # TODO: delete uploaded file
-
-            return str(df.to_json(orient='index')), 200
+            return str(json.dumps(report)), 200
         except error:
             return str(error), 500
     else:
@@ -97,40 +102,9 @@ def upload_file():
 
 
 def loadMBankCsv(file):
-    # check if 'zestawienie' or 'lista' operacji
-    linesToSkip = 0
-
-    fs = open(file, 'r', encoding='cp1250')
-    for txt_line in fs:
-        print(txt_line)
-        if(txt_line.lower().__contains__("#data operacji")):
-            print("found start at line : " + str(linesToSkip))
-            break
-        linesToSkip += 1
-
-    fs.close()
-
-    parsed = pd.read_csv(file, sep=';', encoding='cp1250', skip_blank_lines=False,
-                         skiprows=linesToSkip, header=0, index_col=False, decimal=",")
-
-    for c in parsed.columns:
-        print(str(c))
-
-    for x in parsed.values:
-        temp = Operation()
-        temp.name = x[1]
-        temp.value = x[4]
-        temp.when = x[0]
-        for val in x:
-            print(str('x') + ' - ' + str(val))
-    # parsed.shape[0] = length; #parsed.columns:PandasArray
-    # Data operacji
-    # Opis operacji
-    # Tytuł ?
-    # Kwota
-    # Kategoria ?
-
-    return parsed
+    a = Analyzer(filePath=file)
+    a.analyzeOperationsFromCsv()
+    return a.operationsToAdd, a.scheduledOperationsToAdd, a.categoriesToAdd
 
 
 if __name__ == "__main__":

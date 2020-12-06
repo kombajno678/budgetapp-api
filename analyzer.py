@@ -44,6 +44,7 @@ class Analyzer():
 
     def __init__(self, filePath, user_id=None):
         self.filePath = filePath
+        self.linesToSkip = None
         self.user_id = user_id
 
         self.daterange = None
@@ -358,11 +359,21 @@ class Analyzer():
 
         # read from file
         file = filePath
+        self.linesToSkip = 0
+
+        fs = open(file, 'r', encoding='cp1250')
+        for txt_line in fs:
+            # print(txt_line)
+            if(txt_line.lower().__contains__("#data operacji")):
+                #print("found start at line : " + str(self.linesToSkip))
+                break
+            self.linesToSkip += 1
+
+        fs.close()
 
         # specific for mbank lista operacji
-        linesToSkip = 25
         parsed = pd.read_csv(file, sep=';', encoding='cp1250', skip_blank_lines=False,
-                             skiprows=linesToSkip, header=0, index_col=False, decimal=",")
+                             skiprows=self.linesToSkip, header=0, index_col=False, decimal=",")
 
         #existingOperations = []
         existingCategories = []
@@ -516,7 +527,7 @@ class Analyzer():
 
 if(__name__ == "__main__"):
 
-    a = Analyzer('tmp\\lista_operacji.csv')
+    a = Analyzer('tmp\\lista_operacji.csv', 25)
     a.analyzeOperationsFromCsv()
     print(len(a.categoriesToAdd))
     print(len(a.scheduledOperationsToAdd))
