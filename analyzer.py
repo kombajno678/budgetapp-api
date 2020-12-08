@@ -180,15 +180,20 @@ class Analyzer():
             elif(weekly_cv < maxCv and weekly_cv < daily_cv and weekly_cv < monthly_cv):
                 cv = weekly_cv
                 value = weekly_avg
+                # TODO: try to find out on which day of the WEEK to assin scheudled operation
                 schedule = self.templateSchedules['weekly']
 
             elif(monthly_cv < maxCv and monthly_cv < weekly_cv and monthly_cv < daily_cv):
                 cv = monthly_cv
                 value = monthly_avg
+                # TODO: try to find out on which day of the MONTH to assin scheudled operation
                 schedule = self.templateSchedules['monthly']
             else:
                 # too much variation in values
                 return None
+
+            # round value to 0.01
+            value = round(value, 2)
 
             # skip if value too low
             if(abs(value) < minValue):

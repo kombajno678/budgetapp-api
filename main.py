@@ -111,7 +111,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@app.route('/uploads', methods=['POST'])
+@app.route('/upload', methods=['POST'])
 @gzipped
 def upload_file():
     # check if the post request has the file part

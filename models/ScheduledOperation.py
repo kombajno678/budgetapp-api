@@ -13,10 +13,10 @@ class ScheduledOperation(BaseModel):
     value = db.Column(db.Float, nullable=False)
     name = db.Column(db.String(100))
 
-    schedule_id = db.Column(db.Integer, db.ForeignKey(
-        'schedule.id'), nullable=False)
-
-    schedule = db.relationship('Schedule', foreign_keys=schedule_id)
+    year = db.Column(db.ARRAY(db.Integer), nullable=True)
+    month = db.Column(db.ARRAY(db.Integer), nullable=True)
+    day_of_month = db.Column(db.ARRAY(db.Integer), nullable=True)
+    day_of_week = db.Column(db.ARRAY(db.Integer), nullable=True)
 
     active = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -35,8 +35,14 @@ class ScheduledOperation(BaseModel):
         "user_id",
         "timestamp",
         "value",
-        "schedule_id",
-        "schedule",
+        "name",
+
+        "year",
+        "month",
+        "month",
+        "day_of_month",
+        "day_of_week"
+
         "active",
         "hidden",
         "category_id",
@@ -62,8 +68,18 @@ class ScheduledOperation(BaseModel):
 
     class Schema(ma.Schema):
         class Meta:
-            fields = ('id', 'user_id', 'timestamp', 'schedule_id',
-                      'value', 'name', 'active', 'hidden', 'category_id')
+            fields = ('id',
+                      'user_id',
+                      'timestamp',
+                      "year",
+                      "month",
+                      "day_of_month",
+                      "day_of_week"
+                      'value',
+                      'name',
+                      'active',
+                      'hidden',
+                      'category_id')
 
     # init schema
     schema = Schema()

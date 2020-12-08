@@ -45,12 +45,13 @@ class RootApi(Resource):
 
         #query = self.model_query(db, **kwargs)
 
-        if kwargs.get("id") is not None:
-            user_auth_id = _request_ctx_stack.top.current_user
-            user = User.getByAuthId(user_auth_id)
+        user_auth_id = _request_ctx_stack.top.current_user
+        user = User.getByAuthId(user_auth_id)
 
-            if user is None:
-                return None, 401
+        if user is None:
+            return None, 401
+
+        if kwargs.get("id") is not None and kwargs.get("id") != 0:
 
             if kwargs.get('id') is None:
                 return None, 400
@@ -66,6 +67,25 @@ class RootApi(Resource):
             db.session.commit()
             return self.MODEL_CLASS.Schema().jsonify(existing_object)
         else:
+
+            # http req body values
+            if isinstance(request.json, list):
+                # do stuff is list is passed in request
+                # deleting multiple items
+                query = self.model_query(db, user.id, **kwargs)
+                existing_objects = query.filter(
+                    self.MODEL_CLASS.id in request.json).first()
+
+                if existing_objects is None or len(existing_objects) == 0:
+                    return None, 404
+
+                db.session.delete(existing_objects)
+                db.session.commit()
+                return len(existing_objects), 200
+
+            else:
+                return None, 400
+
             return None, 400
 
     @requires_auth
@@ -78,7 +98,7 @@ class RootApi(Resource):
 
         # http req body values
         if isinstance(request.json, list):
-            #print('posting multiple items')
+            print('posting multiple items')
             new_objects = []
 
             for obj in request.json:
@@ -100,7 +120,7 @@ class RootApi(Resource):
                 print(err)
                 return None, 400
         else:
-            #print('posting single item')
+            print('posting single item')
             new_object = self.MODEL_CLASS()
             for key, value in request.json.items():
                 if hasattr(new_object, key):
