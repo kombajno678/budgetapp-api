@@ -56,7 +56,7 @@ class BaseModel(db.Model):
             if check in _hide or key in hidden:
                 continue
             if check in show or key in default:
-                _hide.append(check)
+                _hide.append(check)  # why
                 is_list = self.__mapper__.relationships[key].uselist
                 if is_list:
                     items = getattr(self, key)

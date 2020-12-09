@@ -113,6 +113,7 @@ class RootApi(Resource):
                 new_object.id = None
                 db.session.add(new_object)
                 new_objects.append(new_object)
+            # print(new_objects)
             try:
                 db.session.commit()
                 return self.MODEL_CLASS.Schema(many=True).jsonify(new_objects)

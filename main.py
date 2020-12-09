@@ -133,15 +133,21 @@ def upload_file():
             cats_json = '['
 
             for x in ops:
-                ops_json += json.dumps(x.to_dict()) + ','
+                ops_json += json.dumps(x.to_dict(_path="operation",
+                                                 _hide=[])) + ','
+            #ops_json += json.dumps(ops.to_dict())
             ops_json = ops_json[:-1] + ']'
 
             for x in sops:
-                sops_json += json.dumps(x.to_dict()) + ','
+                sops_json += json.dumps(
+                    x.to_dict(_path="scheduled_operation", _hide=[])) + ','
+            #sops_json += json.dumps(sops.to_dict())
             sops_json = sops_json[:-1] + ']'
 
             for x in cats:
-                cats_json += json.dumps(x.to_dict()) + ','
+                cats_json += json.dumps(x.to_dict(_path="category",
+                                                  _hide=[])) + ','
+            #cats_json += json.dumps(cats.to_dict())
             cats_json = cats_json[:-1] + ']'
 
             report = '{"Operations":%s, "ScheduledOperations":%s, "Categories":%s}' % (

@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 class Operation(BaseModel):
+    __tablename__ = "operation"
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -43,9 +44,10 @@ class Operation(BaseModel):
         "category_id",
         "category",
     ]
-    _hidden_fields = [
-        "timestamp",
-    ]
+
+    # _hidden_fields = [
+    #     "timestamp",
+    # ]
     _readonly_fields = [
         "id",
         "user_id",

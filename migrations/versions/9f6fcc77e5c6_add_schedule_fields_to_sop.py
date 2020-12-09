@@ -29,6 +29,7 @@ def upgrade():
 
 def downgrade():
     op.drop_column('operation', 'year')
+    op.drop_column('operation', 'year')
     op.drop_column('operation', 'month')
     op.drop_column('operation', 'day_of_month')
     op.drop_column('operation', 'day_of_week')

@@ -202,7 +202,9 @@ class Analyzer():
                 # continue
 
             newScheduledOp = ScheduledOperation(id=None, user_id=self.user_id, value=value, name=groupName,
-                                                schedule_id=None, schedule=schedule, active=True, hidden=False, category=category)
+                                                year=schedule["year"], month=schedule["month"], day_of_month=schedule[
+                                                    "day_of_month"], day_of_week=schedule["day_of_week"],
+                                                active=True, hidden=False, category=category)
 
             newScheduledOp.cv = cv
             newScheduledOp.n = len(similarOperations)
@@ -301,14 +303,26 @@ class Analyzer():
 
     def generateTemplateSchedules(self):
 
-        dailySchedule = Schedule(id=None, user_id=self.user_id, year=[], month=[
-        ], day_of_month=[], day_of_week=[])
+        dailySchedule = {
+            'year': [],
+            'month': [],
+            'day_of_month': [],
+            'day_of_week': []
+        }
 
-        weeklySchedule = Schedule(id=None, user_id=self.user_id, year=[], month=[
-        ], day_of_month=[], day_of_week=[6])
+        weeklySchedule = {
+            'year': [],
+            'month': [],
+            'day_of_month': [],
+            'day_of_week': [1]
+        }
 
-        monthlySchedule = Schedule(id=None, user_id=self.user_id, year=[], month=[
-        ], day_of_month=[1], day_of_week=[])
+        monthlySchedule = {
+            'year': [],
+            'month': [],
+            'day_of_month': [1],
+            'day_of_week': []
+        }
 
         self.templateSchedules = {
             'daily': dailySchedule, 'weekly': weeklySchedule, 'monthly': monthlySchedule}
@@ -456,6 +470,7 @@ class Analyzer():
                 # mbank specific, after double spaces is usually address (which is useless for us)
 
                 name = nameRaw.split("  ")[0]
+                name = name[0:50]
 
                 # parse value, specific for mbank
                 valueRaw = valueRaw.replace(" ", "")
@@ -534,6 +549,9 @@ if(__name__ == "__main__"):
 
     a = Analyzer('tmp\\lista_operacji.csv', 25)
     a.analyzeOperationsFromCsv()
+    print("categoriesToAdd")
     print(len(a.categoriesToAdd))
+    print("scheduledOperationsToAdd")
     print(len(a.scheduledOperationsToAdd))
+    print("operationsToAdd")
     print(len(a.operationsToAdd))

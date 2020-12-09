@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 class ScheduledOperation(BaseModel):
+    __tablename__ = "scheduled_operation"
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -27,8 +28,8 @@ class ScheduledOperation(BaseModel):
 
     category = db.relationship('Category', foreign_keys=category_id)
 
-    cv = None
-    n = None
+    cv = 0
+    n = 0
 
     _default_fields = [
         "id",
@@ -48,9 +49,9 @@ class ScheduledOperation(BaseModel):
         "category_id",
         "category"
     ]
-    _hidden_fields = [
-        "timestamp",
-    ]
+    # _hidden_fields = [
+    #     "timestamp",
+    # ]
     _readonly_fields = [
         "id",
         "user_id",
@@ -74,7 +75,7 @@ class ScheduledOperation(BaseModel):
                       "year",
                       "month",
                       "day_of_month",
-                      "day_of_week"
+                      "day_of_week",
                       'value',
                       'name',
                       'active',

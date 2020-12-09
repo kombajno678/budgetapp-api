@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 class Category(BaseModel):
+    __tablename__ = "category"
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -25,9 +26,9 @@ class Category(BaseModel):
         "icon",
         "color",
     ]
-    _hidden_fields = [
-        "timestamp",
-    ]
+    # _hidden_fields = [
+    #     "timestamp",
+    # ]
     _readonly_fields = [
         "id",
         "user_id",
