@@ -5,6 +5,7 @@ from .operations import routes
 from .schedules import routes
 from .scheduledOperations import routes
 from .fixedPoints import routes
+from .categories import routes
 
 api.add_resource(
     UserApi,

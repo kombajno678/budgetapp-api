@@ -67,26 +67,34 @@ class RootApi(Resource):
             db.session.commit()
             return self.MODEL_CLASS.Schema().jsonify(existing_object)
         else:
+            if kwargs.get("id") == 0:
+                print("delete all")
+                # http req body values
 
-            # http req body values
-            if isinstance(request.json, list):
                 # do stuff is list is passed in request
                 # deleting multiple items
-                query = self.model_query(db, user.id, **kwargs)
-                existing_objects = query.filter(
-                    self.MODEL_CLASS.id in request.json).first()
+                #query = self.model_query(db, user.id, **kwargs)
 
-                if existing_objects is None or len(existing_objects) == 0:
-                    return None, 404
+                query = self.MODEL_CLASS.query.filter(
+                    self.MODEL_CLASS.user_id == user.id
+                )
+
+                deleted = query.delete()
+                '''
+
+                existing_objects = query.all()
+
+                if existing_objects is None:
+                    return 0, 404
+                if len(existing_objects) == 0:
+                    return 0, 200
 
                 db.session.delete(existing_objects)
+                '''
+
                 db.session.commit()
-                return len(existing_objects), 200
-
-            else:
-                return None, 400
-
-            return None, 400
+                return deleted, 200
+        return None, 404
 
     @requires_auth
     def post(self, **kwargs):
