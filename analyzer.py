@@ -36,6 +36,12 @@ def weighted_avg_and_std(values, minWeight=0.5, maxWeight=1.5):
 
 def weighted_avg_std_coefficientOfVariation(values, minWeight=0.5, maxWeight=1.5):
     avg, std = weighted_avg_and_std(values, minWeight, maxWeight)
+    if std == 0 or avg == 0:
+        print('brrr')
+    if avg == 0:
+        return 0, std, 0
+    if std == 0:
+        return avg, 0, 0
     cv = std / avg
     return avg, std, (cv if cv > 0 else -cv)
 
@@ -122,6 +128,9 @@ class Analyzer():
 
         if(category is not None):
             groupName = category.name
+
+        if(len(similarOperations) == 0):
+            return None
 
         operationsByDay, operationsByWeek, operationsByMonth = self.getBins()
 
@@ -356,12 +365,14 @@ class Analyzer():
         scheduledOperationFromOthers = self.tryToGenerateScheduledOperationFromSimilarOperations(
             self.operationsLeftToAnalyze, groupName='Others', category=None, maxCv=999999, minValue=0)
 
-        self.scheduledOperationsToAdd.append(scheduledOperationFromOthers)
+        if(scheduledOperationFromOthers is not None):
 
-        for op in self.operationsLeftToAnalyze:
+            self.scheduledOperationsToAdd.append(scheduledOperationFromOthers)
 
-            op.analyzed = True
-            op.scheduled_operation = scheduledOperationFromOthers
+            for op in self.operationsLeftToAnalyze:
+
+                op.analyzed = True
+                op.scheduled_operation = scheduledOperationFromOthers
 
         # maybe join similar groups
 
