@@ -19,7 +19,14 @@ class RootApi(Resource):
 
         user_auth_id = _request_ctx_stack.top.current_user
         # get user
-        user = User.getByAuthId(user_auth_id)
+        user = None
+        try:
+            user = User.getByAuthId(user_auth_id)#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
+        
+        
         if user is None:
             print('User.getByAuthId(user_auth_id) is None, ' + str(user_auth_id))
             return None, 401
@@ -46,7 +53,12 @@ class RootApi(Resource):
         #query = self.model_query(db, **kwargs)
 
         user_auth_id = _request_ctx_stack.top.current_user
-        user = User.getByAuthId(user_auth_id)
+        user = None
+        try:
+            user = User.getByAuthId(user_auth_id)#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
 
         if user is None:
             return None, 401
@@ -99,7 +111,12 @@ class RootApi(Resource):
     @requires_auth
     def post(self, **kwargs):
         user_auth_id = _request_ctx_stack.top.current_user
-        user = User.getByAuthId(user_auth_id)
+        user = None
+        try:
+            user = User.getByAuthId(user_auth_id)#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
 
         if user is None:
             return None, 401
@@ -151,7 +168,12 @@ class RootApi(Resource):
     @requires_auth
     def put(self, **kwargs):
         user_auth_id = _request_ctx_stack.top.current_user
-        user = User.getByAuthId(user_auth_id)
+        user = None
+        try:
+            user = User.getByAuthId(user_auth_id)#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
 
         if user is None:
             return None, 401

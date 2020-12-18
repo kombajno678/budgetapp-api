@@ -45,4 +45,9 @@ def create_app():
 def create_tables():
     import models
     print('app -> calls db.create_all() ')
-    db.create_all()
+    try:
+        db.create_all()
+    except:
+        print(' =========================== ')
+        print(' === db connection error === ')
+        print(' =========================== ')

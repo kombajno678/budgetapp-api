@@ -180,7 +180,9 @@ if __name__ == "__main__":
         print('INIT: db connection test  :  ' +
               str(db.session.query('1').first()))
     except:
-        print('INIT: db connection test error')
+        print('====================================')
+        print('===INIT: db connection test error===')
+        print('====================================')
 
     print('INIT: app.run()')
 

@@ -26,7 +26,14 @@ class UserApi(RootApi):
                 return self.MODEL_CLASS.Schema().jsonify(element)
 
         # get by token auth_id
-        existing_user = User.query.filter_by(auth_id=user_auth_id).first()
+        existing_user = None
+        try:
+            existing_user = User.query.filter_by(auth_id=user_auth_id).first()#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
+            
+            
         if existing_user:
             return User.Schema().jsonify(existing_user)
 
@@ -55,7 +62,12 @@ class UserApi(RootApi):
         new_user.id = None
         new_user.auth_id = user_auth_id
 
-        db.session.add(new_user)
+        try:
+            db.session.add(new_user)#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
+        
         try:
             db.session.commit()
             return self.MODEL_CLASS.Schema().jsonify(new_user)
@@ -69,7 +81,13 @@ class UserApi(RootApi):
         print('USER PUT, user auth id = ' + str(user_auth_id))
 
         # get by token auth_id
-        existing_user = User.query.filter_by(auth_id=user_auth_id).first()
+        existing_user = None
+        try:
+            existing_user = User.query.filter_by(auth_id=user_auth_id).first()#error when no db
+        except Exception as e:
+            print(e)
+            return {"error" : str(e)}, 500
+        
         if existing_user:
             # update values
             for key, value in request.json.items():

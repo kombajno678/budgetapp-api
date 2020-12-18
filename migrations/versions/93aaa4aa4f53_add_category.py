@@ -17,6 +17,9 @@ depends_on = None
 
 
 def upgrade():
+    #op.drop_column('scheduled_operation', 'category_id')
+    #op.drop_column('operation', 'category_id')
+    # op.drop_table('category')
 
     op.create_table('category',
                     sa.Column('id', sa.INTEGER(),
