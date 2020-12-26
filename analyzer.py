@@ -576,7 +576,7 @@ class Analyzer():
 
         self.scheduledOperationsToAdd = self.generateScheduledOpsFromSingleOps()
         t = time.time() - start
-        print(f"ops:{len(self.operationsToAdd):5}; T={t:4.4f}s; SCORE={a.percentage:4.4f}")
+        print(f"ops:{len(self.operationsToAdd):5}; T={t:4.4f}s; SCORE={self.percentage:4.4f}")
 
         return self.operationsToAdd, self.scheduledOperationsToAdd, self.categoriesToAdd
 
