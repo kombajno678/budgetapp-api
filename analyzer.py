@@ -71,8 +71,13 @@ class Analyzer():
 
         # find recurring operations
         self.maxCvRange = [0.65, 0.85, 1.35, 2.5]
+        self.maxCvRangeFast = [0.65, 2.5]
+        self.maxCvRangeVeryFast = [1.05, 2.55]
+        
         self.minValue = 2.0
-        self.nameSimilarityThreshold = 0.75
+        self.nameSimilarityThreshold = 0.85
+        
+        self.verbose = False
 
     # will ignore thoose substring while checking similarity of operation names
     toIgnore = [
@@ -94,47 +99,11 @@ class Analyzer():
         return name_[0:20]
 
     def similar(self, a, b):
-        a_ = None
-        b_ = None
-        try:
-            a_ = self.cleanOperationName(a)
-            b_ = self.cleanOperationName(b)
+        x = SequenceMatcher()
+        x.set_seqs(self.cleanOperationName(a), self.cleanOperationName(b))
+        return x.ratio()
             
-        except:
-            print('a : ' + str(a))
-            if(a_ is not None):
-                print('a_ : ' + str(a_))
-            print('b : ' + str(b))
-            if(b_ is not None):
-                print('b _: ' + str(b_))
-            
-        x = None
-        try:
-            x = SequenceMatcher()
-            x.set_seqs(a.lower(), b.lower())
 
-
-
-            if(x is None):
-                print('a : ' + str(a))
-                if(a_ is not None):
-                    print('a_ : ' + str(a_))
-                print('b : ' + str(b))
-                if(b_ is not None):
-                    print('b _: ' + str(b_))
-                return 0
-            return x.ratio()
-        except:
-            print('a : ' + str(a))
-            if(a_ is not None):
-                print('a_ : ' + str(a_))
-            print('b : ' + str(b))
-            if(b_ is not None):
-                print('b _: ' + str(b_))
-            if(x is not None):
-                print(x)
-
-        #isjunk = lambda x: x == " "
 
     def getDaterange(self, start_date, end_date):
         if(self.daterange is None):
@@ -278,11 +247,11 @@ class Analyzer():
                 continue
 
             operationsOfCategory = []
-            # gert operations of this category
+            # get operations of this category
             for op in self.operationsLeftToAnalyze:
-                if(op.analyzed or op.skipped):
+                if(op.analyzed or op.skipped or op.category != category):
                     continue
-                if(op.category == category):
+                else:
                     operationsOfCategory.append(op)
 
             if(operationsOfCategory.__len__() >= minNumberOfOperationsInCategory):
@@ -318,7 +287,7 @@ class Analyzer():
             operationsSimilarByName = [op]
 
             for op2 in self.operationsLeftToAnalyze:
-                if(op == op2):
+                if(op == op2 or op2.analyzed or op2.skipped):
                     continue
 
                 # check how similar are names of operations
@@ -386,21 +355,31 @@ class Analyzer():
         self.generateTemplateSchedules()
 
         # find recurring operations
-        for cv in self.maxCvRange:
-            #iteration_start = time.time()
+        cvRange = self.maxCvRange
+        if(len(self.operationsToAdd) > 500):
+            cvRange = self.maxCvRangeFast
+        if(len(self.operationsToAdd) > 1000):
+            cvRange = self.maxCvRangeVeryFast
+            
+        for cv in cvRange:
+            if(self.verbose):
+                iteration_start = time.time()
 
             # by category
             newByCategory = self.analyzeByCategory(
                 minNumberOfOperationsInCategory=3, maxCv=cv, minValue=self.minValue)
 
+            if(self.verbose):
+                category_end = time.time()
             # by similar name
             newByName = self.analyzeByName(minNumberOfOperationsWithSimilarName=3, maxCv=cv,
                                            minValue=self.minValue, nameSimilarityThreshold=self.nameSimilarityThreshold)
 
             self.scheduledOperationsToAdd.extend(newByCategory)
             self.scheduledOperationsToAdd.extend(newByName)
-            #iteration_end = time.time()
-            #print(f"> maxCv:{cv:.3f} minValue:{self.minValue:.1f} newByCategory:{newByCategory.__len__()}, newByName:{newByName.__len__()}; a:{analyzedOperations.__len__()} l:{operationsLeftToAnalyze.__len__()} t:{iteration_end - iteration_start:.3f}s")
+            if(self.verbose):
+                name_end = time.time()
+                print(f"""> maxCv:{cv:.3f} minValue:{self.minValue:.1f} new cat:{newByCategory.__len__()}, new came:{newByName.__len__()};  a:{self.analyzedOperations.__len__()} l:{self.operationsLeftToAnalyze.__len__()}  category_t:{category_end - iteration_start:.3f}s name_t:{name_end - category_end:.3f}s""")
 
         # generate scheduled operation from all other operations
         scheduledOperationFromOthers = self.tryToGenerateScheduledOperationFromSimilarOperations(
@@ -417,12 +396,13 @@ class Analyzer():
 
         # maybe join similar groups
 
-        print(
-            f' === categorized operations : {100*(len(self.analyzedOperations) / (len(self.operationsToAdd))):.2f}% === ')
+        #print(
+            #f' === categorized operations : {100*(len(self.analyzedOperations) / (len(self.operationsToAdd))):.2f}% === ')
 
         # print('scheduled operations to add : ')
         # for sop in scheduledOperationsToAdd:
         #     print(f"{sop!r} {sop.schedule!r}")
+        self.percentage = (len(self.analyzedOperations) / (len(self.operationsToAdd)))
 
         return self.scheduledOperationsToAdd
 
@@ -583,9 +563,11 @@ class Analyzer():
 
     def analyzeOperationsFromCsv(self):
 
+        start = time.time()
         minDate, maxDate, operationsToAdd, operationsLeftToAnalyze, categoriesToAdd = self.parseMBankCsvDataIntoModel(
             self.filePath, self.user_id)
-
+        
+        
         self.minDate = minDate
         self.maxDate = maxDate
         self.operationsToAdd = operationsToAdd
@@ -593,17 +575,44 @@ class Analyzer():
         self.categoriesToAdd = categoriesToAdd
 
         self.scheduledOperationsToAdd = self.generateScheduledOpsFromSingleOps()
+        t = time.time() - start
+        print(f"ops:{len(self.operationsToAdd):5}; T={t:4.4f}s; SCORE={a.percentage:4.4f}")
 
         return self.operationsToAdd, self.scheduledOperationsToAdd, self.categoriesToAdd
 
 
 if(__name__ == "__main__"):
+    
+    #files = ['lista_operacji_170201_201226_202012261145265537.csv', 'lista_operacji_191226_201226_202012261133424994.csv', 'lista_operacji.csv']
+    file = 'lista_operacji_170201_201226_202012261145265537.csv'
+    times = []
+    scores = []
+    
+    cvRanges = [
+        [1.02, 2.55], 
+        [1.03, 2.55], 
+        [1.04, 2.55], 
+        [1.05, 2.55], 
+        [1.06, 2.55], 
+        [1.07, 2.55], 
+        [1.08, 2.55], 
+        [1.09, 2.55], 
+        [1.10, 2.55], 
+        
+    ]
+    #self.maxCvRangeVeryFast = [0.75, 2.5]
+    
+    for cv in cvRanges:
+        iteration_start = time.time()
+        a = Analyzer('tmp\\'+file, 25)
+        a.maxCvRangeVeryFast = cv
+        a.analyzeOperationsFromCsv()
+        iteration_end = time.time()
+        t = iteration_end - iteration_start
+        times.append(t)
+        scores.append(a.percentage)
+        print(f"{cv} T={t:4.4f}s, SCORE={a.percentage:4.4f}")
+        
+    print(f"avg time = {np.average(times):.6f}s")
+    print(f"avg scores = {100*(np.average(scores)):.2f}%")
 
-    a = Analyzer('tmp\\lista_operacji.csv', 25)
-    a.analyzeOperationsFromCsv()
-    print("categoriesToAdd")
-    print(len(a.categoriesToAdd))
-    print("scheduledOperationsToAdd")
-    print(len(a.scheduledOperationsToAdd))
-    print("operationsToAdd")
-    print(len(a.operationsToAdd))
