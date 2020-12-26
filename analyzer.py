@@ -1,4 +1,5 @@
 
+from logging import error
 from models.Schedule import Schedule
 from models.ScheduledOperation import ScheduledOperation
 from models.Operation import Operation
@@ -92,7 +93,31 @@ class Analyzer():
         return name_[0:20]
 
     def similar(self, a, b):
-        return SequenceMatcher(None, self.cleanOperationName(a), self.cleanOperationName(b)).ratio()
+        a_ = None
+        b_ = None
+        try:
+            a_ = self.cleanOperationName(a)
+            b_ = self.cleanOperationName(b)
+            
+        except Exception as error:
+            print('a : ' + str(a))
+            if(a_ is not None):
+                print('a_ : ' + str(a_))
+            print('b : ' + str(b))
+            if(b_ is not None):
+                print('b _: ' + str(b_))
+            print(error)
+            
+        x = None
+        try:
+            
+            x = SequenceMatcher(None, a_, b_)
+            return x.ratio()
+        except Exception as error:
+            if(x is not None):
+                print(x)
+            print(error)
+
         #isjunk = lambda x: x == " "
 
     def getDaterange(self, start_date, end_date):
