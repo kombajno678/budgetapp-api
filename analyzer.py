@@ -114,6 +114,13 @@ class Analyzer():
             x = SequenceMatcher(None, a_, b_)
             return x.ratio()
         except Exception as error:
+            print('a : ' + str(a))
+            if(a_ is not None):
+                print('a_ : ' + str(a_))
+            print('b : ' + str(b))
+            if(b_ is not None):
+                print('b _: ' + str(b_))
+                
             if(x is not None):
                 print(x)
             print(error)
