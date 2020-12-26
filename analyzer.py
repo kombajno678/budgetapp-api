@@ -99,31 +99,34 @@ class Analyzer():
             a_ = self.cleanOperationName(a)
             b_ = self.cleanOperationName(b)
             
-        except Exception as error:
+        except:
             print('a : ' + str(a))
             if(a_ is not None):
                 print('a_ : ' + str(a_))
             print('b : ' + str(b))
             if(b_ is not None):
                 print('b _: ' + str(b_))
-            print(error)
             
         x = None
         try:
-            
             x = SequenceMatcher(None, a_, b_)
+            if(x is None):
+                print('a : ' + str(a))
+                if(a_ is not None):
+                    print('a_ : ' + str(a_))
+                print('b : ' + str(b))
+                if(b_ is not None):
+                    print('b _: ' + str(b_))
             return x.ratio()
-        except Exception as error:
+        except:
             print('a : ' + str(a))
             if(a_ is not None):
                 print('a_ : ' + str(a_))
             print('b : ' + str(b))
             if(b_ is not None):
                 print('b _: ' + str(b_))
-                
             if(x is not None):
                 print(x)
-            print(error)
 
         #isjunk = lambda x: x == " "
 
