@@ -11,6 +11,7 @@ import numpy as np
 import math as math
 import datetime
 from difflib import SequenceMatcher
+import difflib
 from copy import deepcopy
 import time
 
@@ -109,7 +110,11 @@ class Analyzer():
             
         x = None
         try:
-            x = SequenceMatcher(None, a_, b_)
+            x = SequenceMatcher()
+            x.set_seqs(a.lower(), b.lower())
+
+
+
             if(x is None):
                 print('a : ' + str(a))
                 if(a_ is not None):
@@ -117,6 +122,7 @@ class Analyzer():
                 print('b : ' + str(b))
                 if(b_ is not None):
                     print('b _: ' + str(b_))
+                return 0
             return x.ratio()
         except:
             print('a : ' + str(a))
