@@ -129,6 +129,8 @@ class RootApi(Resource):
             for obj in request.json:
                 new_object = self.MODEL_CLASS()
                 for key, value in obj.items():
+                    if key == 'id' or key == 'user_id' or type(value) == dict:
+                        continue
                     if hasattr(new_object, key):
                         setattr(new_object, key, value)
                 # user FK
@@ -149,6 +151,8 @@ class RootApi(Resource):
             print('posting single item')
             new_object = self.MODEL_CLASS()
             for key, value in request.json.items():
+                if key == 'id' or key == 'user_id' or type(value) == dict:
+                    continue
                 if hasattr(new_object, key):
                     setattr(new_object, key, value)
             # user FK
@@ -190,17 +194,23 @@ class RootApi(Resource):
             return None, 404
 
         # http req body values
-        for key, value in request.json.items():
-            if key == 'id' or key == 'user_id':
-                continue
-            if hasattr(existing_object, key):
-                setattr(existing_object, key, value)
-
+        try:
+            for key, value in request.json.items():
+                if key == 'id' or key == 'user_id' or type(value) == dict:
+                    continue
+                if hasattr(existing_object, key):
+                    setattr(existing_object, key, value)
+        except Exception as err:
+            print(err)
+            print(request.json)
+            return None, 400
+        
         try:
             db.session.commit()
             return self.MODEL_CLASS.Schema().jsonify(existing_object)
         except Exception as err:
             print(err)
+            print(request.json)
             return None, 400
 
         """
