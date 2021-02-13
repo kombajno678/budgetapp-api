@@ -144,6 +144,8 @@ class Analyzer():
 
         operationsByDay, operationsByWeek, operationsByMonth = self.getBins()
 
+        averageDayOfMonth = 0;
+
         # fill bins (group by day, week, month)
         for op in similarOperations:
             # datetime.datetime.strptime('2019-01-04T16:41:24+0200', "%Y-%m-%dT%H:%M:%S%z")
@@ -160,6 +162,12 @@ class Analyzer():
             operationsByWeek[yw] += (op.value)
             # if ym in operationsByMonth:
             operationsByMonth[ym] += (op.value)
+            
+            averageDayOfMonth += int(dt.strftime("%d"))
+            
+        averageDayOfMonth = int(averageDayOfMonth / len(similarOperations))
+        if(averageDayOfMonth > 28):
+            averageDayOfMonth = 28
 
         d = []
         w = []
@@ -207,6 +215,10 @@ class Analyzer():
                 value = monthly_avg
                 # TODO: try to find out on which day of the MONTH to assin scheudled operation
                 schedule = self.templateSchedules['monthly']
+                # get avg day of month from operations
+                
+                schedule["day_of_month"] = [averageDayOfMonth]
+                
             else:
                 # too much variation in values
                 return None
@@ -576,43 +588,36 @@ class Analyzer():
 
         self.scheduledOperationsToAdd = self.generateScheduledOpsFromSingleOps()
         t = time.time() - start
-        print(f"ops:{len(self.operationsToAdd):5}; T={t:4.4f}s; SCORE={self.percentage:4.4f}")
+        #print(f"ops:{len(self.operationsToAdd):5}; T={t:4.4f}s; SCORE={self.percentage:4.4f}")
 
         return self.operationsToAdd, self.scheduledOperationsToAdd, self.categoriesToAdd
 
 
 if(__name__ == "__main__"):
     
-    #files = ['lista_operacji_170201_201226_202012261145265537.csv', 'lista_operacji_191226_201226_202012261133424994.csv', 'lista_operacji.csv']
-    file = 'lista_operacji_170201_201226_202012261145265537.csv'
-    times = []
-    scores = []
+    file = 'example.csv'
+    start = time.time()
     
-    cvRanges = [
-        [1.02, 2.55], 
-        [1.03, 2.55], 
-        [1.04, 2.55], 
-        [1.05, 2.55], 
-        [1.06, 2.55], 
-        [1.07, 2.55], 
-        [1.08, 2.55], 
-        [1.09, 2.55], 
-        [1.10, 2.55], 
-        
-    ]
-    #self.maxCvRangeVeryFast = [0.75, 2.5]
+    a = Analyzer(filePath='tmp\\'+file, user_id=1)
     
-    for cv in cvRanges:
-        iteration_start = time.time()
-        a = Analyzer('tmp\\'+file, 25)
-        a.maxCvRangeVeryFast = cv
-        a.analyzeOperationsFromCsv()
-        iteration_end = time.time()
-        t = iteration_end - iteration_start
-        times.append(t)
-        scores.append(a.percentage)
-        print(f"{cv} T={t:4.4f}s, SCORE={a.percentage:4.4f}")
+    operations, scheduledOperations, categories = a.analyzeOperationsFromCsv()
+    
+    t = time.time() - start
+    print(f"Time={t:4.4f}s, categorized operations={(a.percentage*100):4.4f}%")
+    """
+    print(f"operations, {len(operations)}")
+    for x in operations:
+        print(x)
+    """
+    print(f"scheduledOperations, {len(scheduledOperations)}")
+    for x in scheduledOperations:
+        print(x)
+    
+    print(f"categories, {len(categories)}")
+    for x in categories:
+        print(x)
         
-    print(f"avg time = {np.average(times):.6f}s")
-    print(f"avg scores = {100*(np.average(scores)):.2f}%")
+        
+    
+    
 
